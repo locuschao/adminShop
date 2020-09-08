@@ -1,0 +1,197 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table-tool-temp {
+        padding-right: 0px;
+    }
+    .layui-table-cell {
+        height:auto;
+        overflow:visible;
+        text-overflow:inherit;
+        white-space:normal;
+        word-break: break-all;
+    }
+
+</style>
+<div class="layui-card-body">
+    <div class="layui-form" lay-filter="form-live" id="form-live">
+        <table id="table-list" lay-filter="table-list"></table>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="submit" id="batch-create-submit" value="确认">
+        </div>
+    </div>
+</div>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<!-- 工具栏 -->
+<script type="text/html" id="table-tool-bar">
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+</script>
+<script type="text/html" id="table-toolbar-top">
+    <div class="layui-btn-container">
+        <span >批量添加规格-基础信息</span>
+        <span style="float: right;"><a href="javascript:;"><div class="layui-btn layui-btn-sm layui-btn-warm uploadSpec" >下载范本</div></a></span>
+        <span style="float: right;"><a href="javascript:;"><div class="layui-btn layui-btn-sm layui-btn-normal" id="upload-file"  ><i class="layui-icon">&#xe681;</i> 导入</div></a></span>
+    </div>
+</script>
+<script>
+    var goods_id = 0;
+    var template_id = 0;
+    var list_url = "{:url('goods/list_view')}";//列表url
+</script>
+<script src="/static/js/goods.js"></script>
+<script>
+    var ajax_goods_spec_url = "{:url('goods_spec/get_Goods_Spec')}";//获取商品库存
+    var goods_id = "{$goods_id}";
+    layui.use(['table','upload', 'form'],function(){
+        var layer = layui.layer,
+            table = layui.table,
+            $ = layui.$,
+            upload = layui.upload,
+            form = layui.form,
+            dataList = [];
+
+        var tableInsOptions = {
+            elem: '#table-list'
+            ,id:'table-list'
+            ,skin: 'line'
+            ,url: ajax_goods_spec_url+"?goods_id="+goods_id
+            ,toolbar: '#table-toolbar-top'
+            ,defaultToolbar: []
+            ,cols: [[
+                {checkbox: true}
+                ,{field: 'item_id', title: '规格序号', sort: true}
+                ,{field: 'goods_id', title: '商品id', sort: true}
+                ,{field: 'goods_name', title: '商品名称', edit: 'text'}
+                ,{field: 'goods_sn', title: '货号', edit: 'text'}
+                ,{field: 'key', title: '组合key',  edit: 'text'}
+                ,{field: 'key_name', title: '组合规格',  edit: 'text'}
+                ,{field: 'price', title: '售价',  edit: 'text'}
+                ,{field: 'store_count', title: '库存',  edit: 'text'}
+                // ,{title:'操作', toolbar: '#table-tool-bar', unresize:true}
+            ]]
+            ,data: dataList
+        };
+
+        var tableIns  = layui.table.render(tableInsOptions);
+
+        upload.render({
+            elem: '#upload-file'
+            ,url: "{:url('goods_spec/uploadExcel')}"
+            ,accept: 'file'
+            ,exts: 'xlsx|xls|csv'
+            ,done: function(res){
+                layer.msg(res.msg);
+                if (res.code == 0) return false;
+                tableInsOptions.data = res.data;
+                table.render({
+                    elem: '#table-list'
+                    ,data: res.data //直接赋值数据，类型Array，[{},{},...]
+                    ,id:'table-list'
+                    ,skin: 'line'
+                    ,toolbar: '#table-toolbar-top'
+                    ,defaultToolbar: []
+                    ,cols: [[
+                        {checkbox: true}
+                        ,{field: 'id', title: '序号', sort: true}
+                        ,{field: 'goods_id', title: '商品id', sort: true}
+                        ,{field: 'goods_name', title: '商品名称', edit: 'text'}
+                        ,{field: 'goods_sn', title: '货号', edit: 'text'}
+                        ,{field: 'key', title: '组合key',  edit: 'text'}
+                        ,{field: 'key_name', title: '组合规格',  edit: 'text'}
+                        ,{field: 'price', title: '售价',  edit: 'text'}
+                        ,{field: 'store_count', title: '库存',  edit: 'text'}
+                        // ,{title:'操作', toolbar: '#table-tool-bar', unresize:true}
+                    ]]
+                });
+            }
+        });
+
+        table.on('toolbar(table-list)', function(obj){
+            var checkStatus = table.checkStatus('table-list');
+            switch(obj.event){
+                case 'batch-delete':
+                    var length = checkStatus.data.length;
+                    if (length < 1) {
+                        layer.msg('至少选择一个');
+                        return false;
+                    }
+
+                    layer.confirm('你确定删除这' + length + '行吗？', function (index) {
+                        layui.each(checkStatus.data, function (index) {
+                            $("tr[data-index='" + index + "']").remove();
+                        });
+                        layer.close(index);
+                    });
+                    break;
+            };
+        });
+
+        //批量删除
+        $(document).on('click', '.batch-delete', function() {
+            var checkStatus = table.checkStatus('table-list');
+            var length = checkStatus.data.length;
+            if (length < 1) {
+                layer.msg('至少选择一个');
+                return false;
+            }
+
+            layer.confirm('你确定删除这' + length + '行吗？', function (index) {
+                layui.each(checkStatus.data, function (index) {
+                    $("tr[data-index='" + index + "']").remove();
+                });
+                layer.close(index);
+            });
+        });
+
+        //下载范本
+        $(document).on('click', '.uploadSpec', function() {
+            var data = table.cache['table-list'];
+            var ids = [];
+            for (var i=0;i<data.length;i++){
+                ids.push(data[i].goods_id);
+            }
+            if(ids.length<=0){
+                layer.msg("请选择商品");return;
+            }
+            window.location.href = "{:url('goods_spec/upload_spec')}"+"&?id="+ids;
+        });
+
+        table.on('edit(table-list)', function(obj){
+            var value = obj.value //得到修改后的值
+                ,data = obj.data //得到所在行所有键值
+                ,field = obj.field; //得到字段
+            layer.msg('[ID: '+ data.id +'] ' + field + ' 字段更改为：'+ value);
+        });
+
+        table.on('tool(table-list)', function(obj) {
+            var data = obj.data;
+            switch(obj.event)
+            {
+                case 'del':
+                    showConfirm('您确定删除此条记录？', function(index) {
+                        obj.del();
+                        layer.close(index);
+                        return true;
+                    });
+                    break;
+            }
+        });
+
+
+        form.on('submit(submit)', function(data) {
+            ajaxRequest('POST',"{:url('goods_spec/batch_save')}",{'data' : table.cache['table-list'] },'',function(res){
+                if ( res.code === 0 ) {
+                    showErrorMsg(res.msg);
+                } else {
+                    showSuccessMsg(res.msg,function(){
+                        parent.location.reload();
+                    });
+                }
+            });
+        });
+    });
+
+</script>
+{/block}

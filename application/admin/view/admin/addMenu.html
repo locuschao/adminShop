@@ -1,0 +1,118 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否菜单</label>
+        <div class="layui-input-inline">
+            <input type="radio" name="type" value="1" data-val="1" title="是" class="layui-input" checked lay-filter="type">
+            <input type="radio" name="type" value="0" data-val="0" title="否" class="layui-input" lay-filter="type">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">父级</label>
+        <div class="layui-input-inline">
+            <select name="pid" lay-verify="required" id="pid" lay-search="">
+                {volist  name="select_menu" id="vv"}
+                <option value="{$key}" >{$vv}</option>
+                {/volist}
+            </select>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">模块名称</label>
+        <div class="layui-input-inline">
+            <input name="title" type="text" class="layui-input" lay-verify="required" autocomplete="off"  placeholder="模块名">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：系统设置</div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">模块</label>
+        <div class="layui-input-inline">
+            <input name="module" type="text" class="layui-input" lay-verify="required" autocomplete="off"  placeholder="module">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：admin</div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">规则</label>
+        <div class="layui-input-inline">
+            <input name="action" type="text" class="layui-input" lay-verify="required" autocomplete="off"  placeholder="请输入规则url">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：admin/adminList</div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">图标</label>
+        <div class="layui-input-inline">
+            <input name="icon" type="text" class="layui-input" autocomplete="off"  placeholder="请输入icon">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">权重</label>
+        <div class="layui-input-inline">
+            <input name="weight" type="text" class="layui-input" autocomplete="off"  placeholder="权重">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否显示</label>
+        <div class="layui-input-inline">
+            <input type="radio" name="isshow" value="1" data-val="1" title="显示" class="layui-input" checked lay-filter="isshow">
+            <input type="radio" name="isshow" value="0" data-val="0" title="隐藏" class="layui-input" lay-filter="isshow">
+        </div>
+    </div>
+    <div class="layui-form-item layui-hide">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="create-submit" id="create-submit">确定</button>
+        </div>
+    </div>
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var menu_add_url = "{:url('admin/createMenu')}";
+</script>
+<script>
+    layui.use(['layer', 'form'], function(){
+        var  layer = layui.layer //弹层
+            ,form = layui.form //表单
+
+        // 创建菜单
+        $('#create-submit').click(function(){
+            $.ajax({
+                url: menu_add_url,
+                type: 'post',
+                data: {
+                    "module": $("input[name=module]").val(),
+                    "pid": $("#pid").val(),
+                    "title": $("input[name=title]").val(),
+                    "action": $("input[name=action]").val(),
+                    "icon": $("input[name=icon]").val(),
+                    "weight": $("input[name=weight]").val(),
+                    "type": $("input[name=type]:checked").attr("data-val"),
+                    "isshow": $("input[name=isshow]:checked").attr("data-val"),
+                },
+                async: false,
+                dataType: 'json',
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    showErrorMsg('网络繁忙');
+                },
+                success: function(data) {
+                    if ( data.code === 0 ) {
+                        showErrorMsg(data.msg);
+                    } else {
+                        showSuccessMsg(data.msg, function() {
+							parent.location.reload();
+						});
+                    }
+                }
+            });
+        });
+    });
+</script>
+{/block}

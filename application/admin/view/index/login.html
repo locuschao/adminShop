@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>后台登录</title>
+	<meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,user-scalable=yes, minimum-scale=0.4, initial-scale=0.8,target-densitydpi=low-dpi" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+	<link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body class="login-bg">
+    <div class="login layui-anim layui-anim-up">
+        <div class="message">电商后台管理系统</div>
+        <div id="darkbannerwrap"></div>
+
+        <form id="login-form" class="layui-form" onsubmit="return false;" >
+            <input name="username" placeholder="用户名"  type="text" lay-verify="required" id="username" class="layui-input" >
+            <hr class="hr15">
+            <input name="password" lay-verify="required" placeholder="密码"  type="password" id="password" class="layui-input">
+            <hr class="hr20">
+            <input name="captcha" lay-verify="required" placeholder="验证码"  type="text" id="captcha" style="float: left;width:185px;" class="layui-input">
+            <img src="{:url('index/verify')}" style="width:150px;float: right;cursor:pointer"  id='img' title="点击更换">
+            <input value="登录" lay-submit lay-filter="login" style="width:100%;margin-top: 10px;" type="submit" id="submit">
+            <hr class="hr20" >
+            <span>账号：admin123456</span><br><span>密码：admin123456</span>
+        </form>
+    </div>
+</body>
+</html>
+<script type="text/javascript" src="/static/layui/layui.js"></script>
+<script type="text/javascript" src="/static/js/jquery.min.js"></script>
+<script type="text/javascript" src="/static/util/rsa/jsbn.js"></script>
+<script type="text/javascript" src="/static/util/rsa/prng4.js"></script>
+<script type="text/javascript" src="/static/util/rsa/rng.js"></script>
+<script type="text/javascript" src="/static/util/rsa/rsa.js"></script>
+<script type="text/javascript">
+    layui.use(['form'], function() {
+        var form = layui.form
+            , layer = layui.layer
+
+        $('#submit').click(function(){
+            var rsa = new RSAKey();
+            var modulus = "CB84FF0D1ED9A807815346C6B18B7BBF571C1259FE3ABB46FDA3072D0825712054F9AA4B4D560B1B9EA9BD04844CB22CBBE19F9A666D88C74B46AFB36696CE6B6EB131D5F7C82F3BEF8F8EB989A5D95E7B705B5BAC32937C5B69C58F887DE3EC1D52128D9EFCC5F78A6915AAA82CC70343EC26E8369308AEF8C77AB539CC1D93";
+            var exponent = "10001";
+            rsa.setPublic(modulus, exponent);
+            var username = $.trim($("#username").val());
+            var password = $.trim($("#password").val());
+            var captcha = $.trim($("#captcha").val());
+             password = rsa.encrypt(password);
+
+            $.ajax({
+                url: "{:url('index/login')}",
+                type: 'post',
+                data: {username:username,password:password,keeplogin:1,captcha:captcha},
+                async: false,
+                dataType: 'json',
+                success: function(data) {
+                    if ( data.code === 1) {
+                        layer.msg(data.msg,{icon: 1, time: 2000}, function(){
+                                location.href= data.url;
+                            });
+                    }else{
+                        var img = document.getElementById('img');
+                        img.src = "{:url('index/verify')}?rand="+Math.random();
+                        layer.msg(data.msg);
+                    }
+                }
+            });
+        });
+
+        $('#img').click(function(){
+            var img = document.getElementById('img');
+            img.src = "{:url('index/verify')}?rand="+Math.random();
+        });
+    });
+
+
+    /**
+     * FIX BUG
+     * @author wuyh
+     * @date 2020-03-05
+     */
+    if (self.location !== top.location) {
+        top.location = self.location;
+    }
+
+</script>

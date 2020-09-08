@@ -1,0 +1,226 @@
+{extend name='public/base' /}
+
+{block name='content'}
+<style>
+    .layui-table-cell{
+        height: auto;
+    }
+</style>
+    <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">开播时间</label>
+                <div class="layui-input-block">
+                    <input name="start_time" type="text" id="start_time"  class="layui-input" autocomplete="off"   placeholder="开播时间">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">结束时间</label>
+                <div class="layui-input-block">
+                    <input name="end_time" type="text" id="end_time"  class="layui-input" autocomplete="off"   placeholder="结束时间">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">直播名称</label>
+                <div class="layui-input-block">
+                    <input name="title" type="text" id="title"  class="layui-input" autocomplete="off"   placeholder="直播名称">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">状态</label>
+                <div class="layui-input-block">
+                    {:widget('common/singleSelect',array('status|0|状态|name|id',config('enum')['live']['status'],isset($info['type']) ? $info['type'] : ''))}
+                </div>
+            </div>
+            <div class="layui-inline">
+                <div class="layui-input-inline">
+                    <button class="layui-btn submit">
+                        <i class="layui-icon layui-icon-search"></i> 查询
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-card-body">
+        <table class="layui-hide" id="table-list" lay-filter="table-list"></table>
+    </div>
+
+    <!-- 工具栏 -->
+    <script type="text/html" id="tableToolBar">
+        <a class="layui-btn layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+        <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="interact"><i class="layui-icon layui-icon-gift"></i>互动</a>
+        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="live-qrcode"><i class="layui-icon">&#xe610;</i>直播码</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+    </script>
+
+    <script type="text/html" id="tableToolbarTop">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm add">添加直播</button>
+        </div>
+    </script>
+
+    <script type="text/html" id="live-status">
+        {{#  if(d.status_name == '未开始'){ }}
+        <span style="color: #F581B1;">{{ d.status_name }}</span>
+        {{#  } else if (d.status_name == '进行中'){ }}
+        <span style="color: #20a53a;">{{ d.status_name }}</span>
+        {{#  } else if (d.status_name == '已结束') {}}
+        <span style="color: #999;">{{ d.status_name }}</span>
+        {{# }; }}
+    </script>
+{/block}
+
+{block name='javascript'}
+<script>
+    layui.use(['layer', 'table', 'laydate'], function(){
+        var  layer = layui.layer,
+             table = layui.table,
+             laydate = layui.laydate;
+
+        laydate.render({
+            elem: '#start_time',
+            type: 'datetime',
+            calendar: true,
+            max: 30
+        });
+
+        laydate.render({
+            elem: '#end_time',
+            type: 'datetime',
+            calendar: true,
+            max: 30
+        });
+
+        table.render({
+            elem: '#table-list',
+            id:'table',
+            url: "{:url('index')}",
+            title: '直播列表',
+            method: 'POST',
+            limit: "{:config('cfg')['SYS_PAGE']}",
+            page: true,
+            loading: true,
+            skin: 'line',
+            toolbar: '#tableToolbarTop',
+            cols: [[
+                {type: 'checkbox'},
+                {field: 'id', title: 'ID', sort: true, width: 60},
+                {field: 'img_url', title: '图片', width: 100, templet: function(data){
+            return '<a href="javascript:void(0);" onclick=showImg("'+data.img_url+'")><image class="img-thumbnail img-50-50" src="'+data.img_url+'"/></a>';
+        }},
+                {field: 'title', title: '直播标题', width:300},
+                {field: 'start_time', title: '开始时间', align:'center', sort: true},
+                {field: 'end_time', title: '结束时间', align:'center', sort: true, templet: function(d){
+                        return d.end_time == 0 ? '-' : d.end_time;
+                    }},
+                {field: 'anchor_name', title: '主播', align:'center'},
+                {field: 'status_name', title: '状态', align:'center', wdith:60, fixed:'right', unresize:true, templet: '#live-status'},
+                {fixed: 'right', title: '操作', width: 300, align:'center', toolbar: '#tableToolBar'}
+            ]]
+        });
+
+        $(document).on('click', '.submit', function() {
+            table.reload('table', {
+                page: {
+                    curr: 1
+                },
+                where: {
+                    start_time:$('#start_time').val(),
+                    end_time:$('#end_time').val(),
+                    title:$('#title').val(),
+                    status:$('#status').val()
+                }
+            });
+        });
+
+        //新增
+        $(document).on('click', '.add', function() {
+            layer.open({
+                type: 2,
+                title: '添加直播',
+                content: 'add',
+                maxmin: true,
+                area: ['100%', '100%'],
+                btn: ['确定', '取消'],
+                yes: function(index, layero) {
+                    var submit = layero.find('iframe').contents().find("#submit");
+                    submit.click();
+                }
+            });
+        });
+
+        //监听行工具事件
+        table.on('tool(table-list)', function(obj) {
+            var data = obj.data;
+            switch(obj.event)
+            {
+                case 'edit':
+                    layer.open({
+                        type: 2,
+                        title: '修改直播信息',
+                        content: "{:url('edit')}?id=" + data.id,
+                        maxmin: true,
+                        area: ['100%', '100%'],
+                        btn: ['确定', '取消'],
+                        yes: function(index, layero) {
+                            var submit = layero.find('iframe').contents().find("#submit");
+                            submit.click();
+                        }
+                    });
+                    break;
+                case 'live-qrcode':
+                    layer.open({
+                        type: 2,
+                        content: "{:url('viewQrcode')}?id="+data.id,
+                        area: ['380px', '420px'],
+                        title:'主播端直播二维码',
+                        btn:['下载','关闭'],
+                        btnAlign:'c',
+                        yes: function(index, layero){
+                            var iframeWin = window[layero.find('iframe')[0]['name']];
+                            iframeWin.downloadQrcode();
+                        },
+                        cancel: function(){
+                            layer.closeAll();
+                        }
+                    });
+
+                    break;
+
+                case 'del':
+                    showConfirm('您确定删除此条记录？', function(index) {
+                        $.ajax({
+                            type: 'DELETE',
+                            url: "{:url('del')}?id=" + data.id,
+                            dataType: 'json',
+                            success:function(res) {
+                                if (res.code == 1) {
+                                    showSuccessMsg(res.msg, function(){
+                                        obj.del();
+                                        table.reload('table');
+                                    });
+                                } else {
+                                    showErrorMsg(res.msg);
+                                }
+                            }
+                        });
+                    });
+                    break;
+                case 'interact':
+                    layer.open({
+                        type: 2,
+                        title: '直播互动',
+                        content: "{:url('live_item/detail')}?id=" + data.id,
+                        maxmin: true,
+                        area: ['100%', '100%'],
+                        btn: ['关闭', '取消'],
+                        yes: function(index, layero) {
+                            layer.close(layer.index);
+                        }
+                    });
+                    break;
+            }
+        });
+    });
+</script>
+{/block}

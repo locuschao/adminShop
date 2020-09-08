@@ -1,0 +1,6 @@
+<select name="pos_id" id="pos_id"  lay-search="" lay-filter="pos_id">
+    <option value="">请选择广告位</option>
+    {volist  name="$list" id="v"}
+    <option value="{$v.id}" {if $v.id == $select_id } selected {/if}>{$v.name}</option>
+    {/volist}
+</select>

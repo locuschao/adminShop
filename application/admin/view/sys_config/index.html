@@ -1,0 +1,236 @@
+{extend name='public/base' /}
+{block name='content'}
+<style>
+    .ew-tree-table {
+        margin: 0px
+    }
+</style>
+
+<div class="layui-tab" lay-filter="sys-config-tab" style="padding:10px;">
+    <ul class="layui-tab-title">
+        <li {empty name="group_id" }class="layui-this"{/empty}>配置组</li>
+        {foreach name="$config_group_list" item="val"}
+            {if condition="($val.pid == 0)"}
+                <li lay-id="{$val.id}" {eq name="group_id" value="$val.id" }class="layui-this"{/eq}>{$val.title}</li>
+            {/if}
+        {/foreach}
+    </ul>
+
+    <div class="layui-tab-content">
+        <div class="layui-tab-item {empty name='group_id'}layui-show{/empty}">
+            <table class="layui-hide" id="table-list" lay-filter="table-list"></table>
+        </div>
+
+        {notempty name="$config_group_list"}
+            {foreach name="$config_group_list" item="vo"}
+                {if condition="($vo.pid == 0)"}
+                    <div class="layui-tab-item" lay-id="{$vo.id}">
+                        <table class="layui-hide" id="config-table-list-{$vo.id}" lay-filter="config-table-list-{$vo.id}"></table>
+                    </div>
+                {/if}
+            {/foreach}
+        {/notempty}
+    </div>
+</div>
+
+<script type="text/html" id="tableToolbarTop">
+    <a class="layui-btn layui-btn-sm conf-add" lay-event="add">新增配置项</a>
+</script>
+
+<script type="text/html" id="tableToolBar">
+    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+</script>
+
+<script type="text/html" id="GroupTableToolBar">
+    <a class="layui-btn layui-btn-xs" lay-event="add"><i class="layui-icon">&#xe624;</i>新增</a>
+    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="edit"><i class="layui-icon layui-icon-edit"></i>编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+</script>
+
+{/block}
+
+{block name='javascript'}
+<script>
+    layui.config({
+        base: '/static/lib/extend/'
+    }).extend({
+        treeTable: 'treeTable/treeTable'
+    }).use(['layer', 'table', 'treeTable', 'element'], function () {
+        var layer = layui.layer,
+            treeTable = layui.treeTable
+            table = layui.table,
+            element = layui.element;
+        var layId = 0;
+
+        var insTb=  treeTable.render({
+            elem: '#table-list',
+            tree: {
+                iconIndex: 1,
+                idName: 'id',
+            },
+            cols: [
+                {type: 'numbers'},
+                {field: 'title', title: '标题', width: 300},
+                {field: 'create_at', title: '创建时间', width: 180},
+                {field: 'update_at', title: '修改时间', width: 180},
+                {field: 'sort', title: '排序', width: 80},
+                {templet: '#GroupTableToolBar', align: 'center', title: '操作'}
+            ],
+            getThead: function () {
+                return '<tr><td colspan="6"><a class="layui-btn layui-btn-sm group-add">新增</a></td></tr>' +
+                    '<tr><td></td><td>标题</td><td>创建时间</td><td>修改时间</td><td>排序</td>' +
+                    '<td class="layui-table-col-special">操作</td></tr>';
+            },
+            reqData: function (data, callback) {
+                $.post("{:url('sys_config_group/getTree')}", function (res) {
+                    callback(res.data);  //
+                });
+            }
+        });
+
+        $(document).on('click', '.group-add', function() {
+            edit({
+                title:'添加配置组',
+                url: "{:url('sys_config_group/add')}",
+                callback: function(index, layero){
+                    var iframe = window['layui-layer-iframe' + index];
+                    iframe.child(insTb);
+                }
+            });
+        });
+
+        function edit(option){
+            layer.open({
+                type: 2,
+                title: option.title,
+                content: option.url,
+                maxmin: true,
+                area: !!option.area == false ? ['60%', '60%'] : option.area,
+                btn: ['确定', '取消'],
+                yes: function (index, layero) {
+                    if (option.callback)  option.callback(index, layero);
+
+                    var submit = layero.find('iframe').contents().find("#submit");
+                    submit.click();
+                }
+            });
+        }
+
+        function del(url, obj, tableId){
+            showConfirm('您确定删除此条记录？', function (index) {
+                $.ajax({
+                    type: 'DELETE',
+                    url: url,
+                    dataType: 'json',
+                    success: function (res) {
+                        if (res.code == 1) {
+                            showSuccessMsg(res.msg, function () {
+                                obj.del();
+                                if ('table-list'  == tableId){
+                                    insTb.reload();
+                                } else{
+                                    table.reload(tableId);
+                                }
+                            });
+                        } else {
+                            showErrorMsg(res.msg);
+                        }
+                    }
+                });
+            });
+        }
+
+        treeTable.on('tool(table-list)', function (obj) {
+            var data = obj.data;
+            switch (obj.event) {
+                case 'add':
+                        edit({
+                            title:'添加配置组',
+                            url: "{:url('sys_config_group/add')}?pid=" + data.id,
+                            callback: function(index, layero){
+                                var iframe = window['layui-layer-iframe' + index];
+                                iframe.child(insTb);
+                            }
+                        });
+                    break;
+                case 'edit':
+                        edit({
+                            title:'修改配置组',
+                            url: "{:url('sys_config_group/edit')}?id=" + data.id,
+                            callback: function(index, layero){
+                                var iframe = window['layui-layer-iframe' + index];
+                                iframe.child(insTb);
+                            }
+                        });
+                    break;
+                case 'del':
+                        del("{:url('sys_config_group/del')}?id=" + data.id, obj, 'table-list');
+                    break;
+            }
+        });
+
+        element.on('tab(sys-config-tab)', function () {
+            layId = this.getAttribute('lay-id');
+            location.hash = 'sys-config-tab=' + layId;
+            table.render({
+                elem: '#config-table-list-' + layId,
+                // id: 'table',
+                url: "{:url('sys_config/index')}?group_id=" + layId,
+                title: '配置列表',
+                method: 'GET',
+                page: true,
+                loading: true,
+                skin: 'line',
+                toolbar: '#tableToolbarTop',
+                cols: [[
+                    {type: 'checkbox', fixed: 'left'},
+                    {field: 'id', title: 'ID', sort: true, width: 30},
+                    {field: 'title', title: '标题',},
+                    {field: 'name', title: '标识', align: 'left'},
+                    {field: 'sub_name', title: '具体分组', align: 'center'},
+                    {field: 'type', title: '类型', align: 'center'},
+                    {field: 'sort', title: '排序', sort: true, align: 'center', fixed: 'right'},
+                    {fixed: 'right', title: '操作', width: 300, align: 'center', toolbar: '#tableToolBar'}
+                ]]
+            });
+
+            table.on('toolbar(' + 'config-table-list-' + layId + ')', function(obj){
+                switch(obj.event){
+                    case 'add':
+                        edit({
+                            title:'添加配置项目',
+                            url: "{:url('add')}?group_id=" + layId,
+                            area : ['100%', '100%'],
+                            callback: function(index, layero){
+                                var iframe = window['layui-layer-iframe' + index];
+                                iframe.child('config-table-list-' + layId);
+                            }
+                        });
+                        break;
+                };
+            });
+
+            table.on('tool(' + 'config-table-list-' + layId + ')', function (obj) {
+                var data = obj.data;
+                switch (obj.event) {
+                    case 'edit':
+                        edit({
+                            title:'修改配置项目',
+                            url: "{:url('edit')}?id=" + data.id,
+                            area : ['100%', '100%'],
+                            callback: function(index, layero){
+                                var iframe = window['layui-layer-iframe' + index];
+                                iframe.child('config-table-list-' + layId);
+                            }
+                        });
+                        break;
+                    case 'del':
+                        del("{:url('sys_config/del')}?id=" + data.id, obj, 'config-table-list-' + layId);
+                        break;
+                }
+            });
+        });
+    });
+</script>
+{/block}

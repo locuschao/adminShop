@@ -1,0 +1,64 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<div class="layui-form" lay-filter="form-config-group" id="form-config-group">
+    <div class="layui-tab-content">
+        <div class="layui-form-item required">
+            <label class="layui-form-label">组名称</label>
+            <div class="layui-input-block">
+                <input type="text" id="title" name="title" lay-verify="required" placeholder="请输入组名称" autocomplete="off"
+                       class="layui-input" value="{$info.title|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">排序</label>
+            <div class="layui-input-block">
+                <input type="text" name="sort" lay-verify="number" placeholder="排序" autocomplete="off"
+                       class="layui-input" value="{$info.sort|default=0}">
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="submit" id="submit" value="确认">
+            <input type="text" name="pid" value="{$info.pid|default=0}">
+            {notempty name="info.id"}<input type="text" name="id" value="{$info.id}">{/notempty}
+        </div>
+    </div>
+</div>
+{/block}
+{block name='javascript'}
+<script>
+    var insTb;
+    function child(tb) {
+        insTb = tb;
+    }
+
+    layui.use(['layer', 'form'], function () {
+        var layer = layui.layer,
+            form = layui.form;
+
+        form.on('submit(submit)', function (data) {
+            //判断是否全部加载完毕
+            var field = data.field; //获取提交的字段
+            var index = parent.layer.getFrameIndex(window.name);
+            var url = !!data.field.id == false ? 'add' : 'edit';
+
+            $.ajax({
+                type: 'POST',
+                url: url,
+                dataType: 'json',
+                data: field,
+                success: function (res) {
+                    if (res.code == 1) {
+                        showSuccessMsg(res.msg, function () {
+                            insTb.reload();
+                            parent.layer.close(index); //再执行关闭
+                        });
+                    } else {
+                        showErrorMsg(res.msg);
+                    }
+                }
+            });
+        });
+    });
+</script>
+{/block}

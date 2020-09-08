@@ -1,0 +1,120 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table th {
+        background-color: #f8f8f8;
+    }
+
+    .layui-table tbody tr:hover, .layui-table thead tr, .layui-table[lay-even] tr:nth-child(even) {
+        background-color: transparent;
+    }
+</style>
+<div class="layui-card-body">
+    <div class="layui-form">
+        <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+            <legend>订单信息</legend>
+        </fieldset>
+        <div class="layui-form">
+            <table class="layui-table">
+                <colgroup>
+                    <col width="150">
+                    <col width="150">
+                    <col width="200">
+                    <col>
+                </colgroup>
+                <tbody>
+                <tr>
+                    <th>订单ID</th>
+                    <td>{$info.id}</td>
+                    <th>用户ID</th>
+                    <td>{$info.user.nickname} #{$info.user.id}</td>
+                    <th>订单号（原始支付单）</th>
+                    <td>{$info.order_sn}</td>
+                    <th>创建时间</th>
+                    <td>{$info.create_time}</td>
+                </tr>
+                <tr>
+                    <th>支付类型</th>
+                    <td>{:payTypeHtml($info.paytype)}</td>
+                    <th>支付状态</th>
+                    <td>{:payStatusHtml($info.status)}</td>
+                    <th>第三方支付订单号</th>
+                    <td>{$info.attach|default="-"}</td>
+                    <th>支付时间</th>
+                    <td>{$info.create_time}</td>
+                </tr>
+                <tr>
+                    <th>商品总价</th>
+                    <td>{$info.goods_price}</td>
+                    <th>订单金额</th>
+                    <td>{$info.order_amount}</td>
+                    <th>应付金额</th>
+                    <td>{$info.total_amount}</td>
+                    <th>实际支付</th>
+                    <td>{$info.amount}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+            <legend>收货人信息</legend>
+        </fieldset>
+        <div class="layui-form">
+            <table class="layui-table">
+                <colgroup>
+                    <col width="150">
+                    <col width="150">
+                    <col width="200">
+                    <col>
+                </colgroup>
+                <tbody>
+                <tr>
+                    <th>收件人</th>
+                    <td>{$info.consignee}</td>
+                    <th>手机</th>
+                    <td>{$info.mobile}</td>
+                </tr>
+                <tr>
+                    <th>收货地址</th>
+                    <td colspan="3">{$info.address}</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+            <legend>商品信息</legend>
+        </fieldset>
+        <div class="layui-form">
+            <table class="layui-table">
+                <colgroup>
+                    <col width="600">
+                    <col width="150">
+                    <col width="100">
+                    <col width="100">
+                </colgroup>
+                <tbody>
+                <tr>
+                    <th>商品名称</th>
+                    <th>商品货号</th>
+                    <th>商品价格</th>
+                    <th>购买数量</th>
+                    <th>商品规格</th>
+                </tr>
+                {foreach $info.GoodsOrder as $vo}
+                    <tr>
+                        <td>{$vo.goods_name}</td>
+                        <td>{$vo.goods_sn}</td>
+                        <td>{$vo.goods_price}</td>
+                        <td>{$vo.goods_num}</td>
+                        <td>{:goodsItem($vo.item_id)}</td>
+                    </tr>
+                {/foreach}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{/block}

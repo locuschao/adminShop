@@ -1,0 +1,121 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<div class="layui-card-body">
+    <div class="layui-form" lay-filter="form-live" id="form-live">
+    <table id="table-list" lay-filter="table-list"></table>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="submit" id="submit" value="确认">
+        </div>
+    </div>
+</div>
+
+<!-- 工具栏 -->
+<script type="text/html" id="table-tool-bar">
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+</script>
+
+<script type="text/html" id="table-toolbar-top">
+    <div class="layui-btn-container">
+        <a href="/upload/batch_order_tracking.xls" class="layui-btn layui-btn-sm shipping"><i class="layui-icon">&#xe601;</i> 下载模板</a>
+        <button class="layui-btn layui-btn-sm layui-btn-danger batch-delete" lay-event="batch-delete"><i class="layui-icon">&#xe640;</i> 批量删除</button>
+        <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="upload-file" id="upload-file"><i class="layui-icon">&#xe681;</i> 选择文件</button>
+    </div>
+</script>
+
+<script>
+    layui.use(['table','upload', 'form'],function(){
+        var layer = layui.layer,
+            table = layui.table,
+            $ = layui.$,
+            upload = layui.upload,
+            form = layui.form,
+            dataList = [];
+
+        var uploadOption = {
+            elem: '#upload-file'
+            ,url: "{:url('uploadExcel')}"
+            ,accept: 'file'
+            ,exts: 'xlsx|xls|cvs'
+            ,done: function(res){
+                layer.msg(res.msg);
+                if (res.code == 0) return false;
+                tableInsOptions.data = res.data;
+                tableIns.reload(tableInsOptions);
+            }
+        };
+
+        var tableInsOptions = {
+            elem: '#table-list'
+            ,id:'table-list'
+            ,skin: 'line'
+            ,toolbar: '#table-toolbar-top'
+            ,cols: [[
+                {type: 'checkbox', fixed: 'left'}
+                ,{field: 'order_id', title: '订单ID', width: 300, edit: 'text'}
+                ,{field: 'shipping_name', title: '发货物流', edit: 'text'}
+                ,{field: 'delivery_id', title: '物流单号',  edit: 'text', width: 300}
+                ,{title:'操作', toolbar: '#table-tool-bar', width:300, unresize:true}
+            ]]
+            ,data: dataList
+            ,done: function (res, curr, count) {
+                upload.render(uploadOption);
+            }
+        };
+
+        var tableIns  = layui.table.render(tableInsOptions);
+
+        table.on('toolbar(table-list)', function(obj){
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch(obj.event){
+                case 'batch-delete':
+                    var length = checkStatus.data.length;
+                    if (length < 1) {
+                        layer.msg('至少选择一个');
+                        return false;
+                    }
+
+                    layer.confirm('你确定删除这' + length + '行吗？', function (index) {
+                        layui.each(checkStatus.data, function (index) {
+                            $("tr[data-index='" + index + "']").remove();
+                        });
+                        layer.close(index);
+                    });
+                    break;
+            };
+        });
+
+
+        table.on('edit(table-list)', function(obj){
+            var value = obj.value //得到修改后的值
+                ,data = obj.data //得到所在行所有键值
+                ,field = obj.field; //得到字段
+            layer.msg('修改成功');
+        });
+
+        table.on('tool(table-list)', function(obj) {
+            var data = obj.data;
+            switch(obj.event)
+            {
+                case 'del':
+                    showConfirm('您确定删除此条记录？', function(index) {
+                        obj.del();
+                        layer.close(index);
+                        return true;
+                    });
+                    break;
+            }
+        });
+
+        form.on('submit(submit)', function(data) {
+            var index = parent.layer.getFrameIndex(window.name);
+            ajaxRequest('POST',"{:url('batchShipping')}",{'data' : table.cache['table-list'] },'',function(res){
+                showSuccessMsg(res.msg);
+                parent.layui.table.reload('table-list'); //重载表格
+                parent.layer.close(index);
+            });
+        });
+    });
+
+</script>
+{/block}

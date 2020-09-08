@@ -1,0 +1,70 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">导航名</label>
+        <div class="layui-input-inline">
+            <input name="name" type="text" class="layui-input" required autocomplete="off" value="{$info.name}" placeholder="导航名">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：推荐</div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">排序</label>
+        <div class="layui-input-inline">
+            <input name="order_by" type="text" class="layui-input" required autocomplete="off" value="{$info.order_by}" placeholder="排序">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否启用</label>
+        <div class="layui-input-inline">
+            <input type="radio" name="is_show" value="1" data-val="1" title="启用" class="layui-input" {if $info.is_show==1} checked {/if} lay-filter="is_show">
+            <input type="radio" name="is_show" value="0" data-val="0" title="禁用" class="layui-input" {if $info.is_show==0} checked {/if} lay-filter="is_show">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block layui-hide">
+			<input type="hidden" name="id" value="{$info.id}">
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="create-submit" id="create-submit">确定</button>
+        </div>
+    </div>
+
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var edit_url = "{:url('setting/editNav')}";
+</script>
+<script>
+    layui.use(['layer', 'form','upload'], function(){
+        var  layer = layui.layer //弹层
+            ,form = layui.form //表单
+            ,upload = layui.upload
+
+        // 创建菜单
+        form.on('submit(create-submit)', function(data) {
+            $.ajax({
+                url: edit_url,
+                type: 'post',
+                data: $("#create-form").serialize(),
+                async: false,
+                dataType: 'json',
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    showErrorMsg('网络繁忙');
+                },
+                success: function(data) {
+                    if ( data.code === 0 ) {
+                        showErrorMsg(data.msg);
+                    } else {
+                        showSuccessMsg(data.msg, function() {
+							parent.location.reload();
+						});
+                    }
+                }
+            });
+        });
+
+    });
+</script>
+{/block}

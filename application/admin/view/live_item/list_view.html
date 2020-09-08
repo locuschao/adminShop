@@ -1,0 +1,117 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table-tool-temp {
+        padding-right: 0px;
+    }
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+
+        </div>
+        <div class="layui-card-body">
+            <table class="layui-hide" id="table-list"  lay-filter="table-list"></table>
+        </div>
+    </div>
+</div>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs"  lay-event="edit">编辑</a>
+</script>
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <span ><a href="javascript:;"><div class="layui-btn layui-btn-sm add">新增直播项</div></a></span>
+    </div>
+</script>
+<script type="text/html" id="check-status">
+    {{#  if(d.status == 0){ }}
+    <span style="color: #F581B1;">禁用</span>
+    {{#  } else if (d.status == 1){ }}
+    <span style="color: #20a53a;">启用</span>
+    {{# }; }}
+</script>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    layui.use(['layer', 'table', 'element', 'form', 'laydate'], function(){
+        var  layer = layui.layer //弹层
+            ,table = layui.table //表格
+            ,form = layui.form
+
+        //执行一个 table 实例
+        table.render({
+            elem: '#table-list'
+            ,url: "{:url('list_view')}"
+            ,title: '商家管理'
+            ,method: 'POST'
+            ,page: true //开启分页
+            ,limit: "{:config('cfg')['SYS_PAGE']}"
+            ,loading: true
+            ,toolbar: '#toolbarDemo' //开启头部工具栏
+            ,defaultToolbar: []
+            ,skin: 'line'
+            ,id:'table-list'
+            ,cols: [[
+                {type: 'checkbox', fixed: 'left'}
+                ,{field: 'item_id', title: '序号',  sort: true,'width':80}
+                ,{field: 'item_name', title: '直播项',align:'center', 'width':150}
+                ,{field: 'desc', title: '描述',align:'center'}
+                ,{field: 'status', title: '状态',align:'center',templet:'#check-status'}
+                ,{field: 'create_time', title: '创建时间',align:'center'}
+                ,{fixed: 'right', title: '操作', width:365, align:'center', toolbar: '#barDemo'}
+            ]]
+        });
+
+        //筛选条件
+        form.on('submit(search)', function (data) {
+            table.reload('table-list',{
+                where: data.field,
+                page: { curr: 1 }
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+
+        //监听行工具事件
+        table.on('tool(table-list)', function(obj) {
+            var data = obj.data;
+            switch(obj.event)
+            {
+                case 'edit':
+                    layer.open({
+                        type: 2,
+                        title: '编辑',
+                        content: "{:url('edit')}?id=" + data.item_id,
+                        maxmin: true,
+                        area: ['100%', '100%'],
+                        btn: ['确定', '取消'],
+                        yes: function(index, layero) {
+                            submitBtn = layero.find('iframe').contents().find("#edit-submit");
+                            submitBtn.click();
+                        }
+                    });
+                    break;
+            }
+        });
+
+        //添加
+        $(document).on('click', '.add', function() {
+            layer.open({
+                type: 2,
+                title: '添加',
+                content:"{:url('add')}",
+                area: ['100%', '100%'],
+                maxmin: true,
+                btn:  ['确认','取消'],
+                yes: function(index, layero) {
+                    submitBtn = layero.find('iframe').contents().find("#create-submit");
+                    submitBtn.click();
+                },
+                id: 'LAY_layuipro',
+            });
+
+
+        });
+    });
+</script>
+{/block}

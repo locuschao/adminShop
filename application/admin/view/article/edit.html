@@ -1,0 +1,315 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-form-label {
+        width: 110px;
+    }
+</style>
+<form class="layui-form" style="padding: 20px 20px 0 0;">
+    <div class="layui-form-item">
+        <label class="layui-form-label">文章标题</label>
+        <div class="layui-input-block">
+            <input type="text" id="title" name="title" value="{$info.title ?? ''}" placeholder="文章标题" autocomplete="off" lay-verify="required" class="layui-input" />
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">标题图片</label>
+        <p style="color:red;">*编辑该商品于前端的列表展示图片（推荐尺寸710x300）</p>
+        {:widget('upload/uploadSingleImage',array('thum' ,$info.thum ?? '' ,'375x150'))}
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否推荐</label>
+        <div class="layui-input-block" id="radio_recommend" data-recommend="{$info.recommend ?? 0}">
+            <input type="radio" name="recommend" value="0" lay-filter="recommend" title="否" checked />
+            <input type="radio" name="recommend" value="1" lay-filter="recommend" title="是" />
+        </div>
+    </div>
+    <div class="layui-form-item" id="recommend_img" style="display:none;">
+        <label class="layui-form-label">推荐位图片</label>
+        <p style="color:red;">*编辑该商品于前端的列表展示图片（推荐尺寸710x300）</p>
+        {:widget('upload/uploadSingleImage',array('recommendImg' ,$info.recommend_img ?? '' ,'375x150'))}
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">发布用户</label>
+        <div class="layui-input-inline">
+            <input type="text" id="nickname" name="nickname" value="{$info.nickname ?? ''}" placeholder="发布用户" autocomplete="off" class="layui-input layui-disabled" lay-verify="required" readonly />
+            <input type="hidden" id="user_id" name="user_id" value="{$info.user_id ?? ''}" />
+        </div>
+        <div class="layui-inline">
+            <button type="button" class="layui-btn" id="selectUser">选择用户</button>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">关联商品</label>
+        <div class="layui-input-inline">
+            <input type="text" id="goods_id" name="goods_id" value="{$info.goods_id ?? ''}" placeholder="商品ID" autocomplete="off" class="layui-input layui-disabled" readonly />
+        </div>
+        <div class="layui-inline">
+            <button type="button" class="layui-btn" id="selectGoods">选择商品</button>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">关联文章</label>
+        <div class="layui-input-inline">
+            <input type="text" id="article_ids" name="article_ids" value="{$info.article_ids ?? ''}" placeholder="文章ID,多个用,号隔开" autocomplete="off" class="layui-input layui-disabled" readonly />
+        </div>
+        <div class="layui-inline">
+            <button type="button" class="layui-btn" id="selectArticle">选择文章</button>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">分享赠礼</label>
+        <div class="layui-input-block" id="radio_coupon_type" data-coupon-type="{$info.coupon_type ?? 0}">
+            <input type="radio" name="coupon_type" value="0" lay-filter="coupon_type" title="无" checked />
+            <input type="radio" name="coupon_type" value="1" lay-filter="coupon_type" title="优惠卷" />
+            <input type="radio" name="coupon_type" value="2" lay-filter="coupon_type" title="红包" />
+        </div>
+    </div>
+    <div class="layui-form-item" id="coupon_id_div" data-coupon-id="{$info.coupon_id ?? 0}" style="display:none;">
+        <label class="layui-form-label">关联赠礼</label>
+        <div class="layui-input-inline">
+			<select name="coupon_id" lay-search=""><option value="">选择赠礼</option></select>
+        </div>
+    </div>
+    <!--<div class="layui-form-item">
+        <label class="layui-form-label">关键字</label>
+        <div class="layui-input-block">
+            <input type="text" id="keyword" name="keyword" value="{$info.keyword ?? ''}" placeholder="关键字（多个用英文,号隔开）" autocomplete="off" class="layui-input" />
+        </div>
+    </div>-->
+    <!--<div class="layui-form-item">
+        <label class="layui-form-label">标记</label>
+        <div class="layui-input-block" id="mark" data-mark="{$info.mark ?? ''}">
+            <input type="checkbox" id="mark_top" name="mark[]" value="top" lay-skin="primary" title="置顶">
+            <input type="checkbox" id="mark_hot" name="mark[]" value="hot" lay-skin="primary" title="热门">
+        </div>
+    </div>-->
+    <div class="layui-form-item">
+        <label class="layui-form-label">审核</label>
+        <div class="layui-input-inline">
+            <input type="checkbox" id="isshow" name="isshow" data-isshow="{$info.isshow ?? ''}" lay-skin="switch" checked lay-text="己审|未审" >
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">排序</label>
+        <div class="layui-input-inline">
+            <input type="text" id="sort" name="sort" value="{$info.sort ?? ''}" placeholder="数字越大越靠前" autocomplete="off" class="layui-input" />
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">显示时间</label>
+        <div class="layui-input-inline">
+            <input type="text" id="start_time" name="start_time" value="{$info.start_time ?? ''}" placeholder="显示时间" lay-verify="required" autocomplete="off" class="layui-input" />
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">结束时间</label>
+        <div class="layui-input-inline">
+            <input type="text" id="end_time" name="end_time" value="{$info.end_time ?? ''}" placeholder="结束时间" lay-verify="required" autocomplete="off" class="layui-input" />
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">描述</label>
+        <div class="layui-input-block">
+            <textarea id="description" name="description" class="layui-textarea">{$info.description ?? ''}</textarea>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">内容</label>
+        <div class="layui-input-block">
+            {:widget('common/editor',array('content',$info.content ?? ''))}
+        </div>
+    </div>
+    <div class="layui-form-item layui-hide">
+        <input type="hidden" name="id" value="{$info.id ?? ''}" />
+        <input type="button" lay-submit lay-filter="submit" id="submitBtn" value="确认">
+    </div>
+</form>
+{/block}
+
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var id = $('input[name="id"]').val();
+    var edit_url = "{:url('article/edit')}";
+
+    $(function() {
+        layui.use(['form','laydate'], function() {
+            var form = layui.form,laydate = layui.laydate;
+
+            laydate.render({
+                elem: '#start_time',
+                type: 'datetime',
+            });
+            
+            laydate.render({
+                elem: '#end_time',
+                type: 'datetime',
+            });
+            
+            //编辑
+            if(id>0){
+                /*if ($('#mark').attr('data-mark').indexOf('top') > -1) $('#mark_top').attr('checked',true);
+                if ($('#mark').attr('data-mark').indexOf('hot') > -1) $('#mark_hot').attr('checked',true);*/
+                if ($('#isshow').attr('data-isshow') == 0) $('#isshow').attr('checked',false);
+                
+                if($('#radio_recommend').attr('data-recommend')==1){
+                    $("input[name='recommend']").get(1).checked = true;
+                    $('#recommend_img').show();
+                }
+                var couponType = $('#radio_coupon_type').attr('data-coupon-type');
+                var coupon_id = $('#coupon_id_div').attr('data-coupon-id');
+                if(couponType>0){
+                    $("input[name='coupon_type']").get(couponType).checked = true;
+                    getCoupon(couponType,coupon_id);
+                    $('#coupon_id_div').show();
+                }
+                
+                
+                
+                form.render();
+            }
+            
+            form.on('submit(submit)', function(data) {
+                //判断是否全部加载完毕
+                var field = data.field; //获取提交的字段
+                var index = parent.layer.getFrameIndex(window.name);
+                field.isshow = field.isshow=='on' ? 1 : 0;
+                
+                ajaxRequest('POST',edit_url,field,'',function(res) {
+                    if (res.code == 1) {
+                        showSuccessMsg(res.msg, function() {
+                            parent.layui.table.reload('table'); //重载表格
+                            parent.layer.close(index); //再执行关闭
+                        });
+                    } else {
+                        showErrorMsg(res.msg);
+                    }
+                });
+            });
+            
+            //关联用户
+            $('#selectUser').click(function(){
+                layer.open({
+                    type: 2,
+                    title: '选择用户',
+                    content: '/user/userlist',
+                    maxmin: true,
+                    area: ['80%','80%'],
+                    btn: ['确定', '取消'],
+                    yes: function(index, layero) {
+                        var iframeWindow = window['layui-layer-iframe' + index];
+                        var checkStatus = iframeWindow.layui.table.checkStatus('testReload');
+                        checkData = checkStatus.data;
+                        if (checkData.length == 0) {
+                            return showErrorMsg('请选择用户');
+                        }
+                        if(checkData.length>1){
+                            return showErrorMsg('只能选择一个用户');
+                        }
+                        $('#user_id').val(checkData[0].id);
+                        $('#nickname').val(checkData[0].nickname);
+                        form.render();
+                        layer.close(index);
+                    }
+                });
+            });
+            
+            //关联商品
+            $('#selectGoods').click(function(){
+                layer.open({
+                    type: 2,
+                    title: '选择商品',
+                    content: '/tag_tools/selectgoods',
+                    maxmin: true,
+                    area: ['80%','80%'],
+                    btn: ['确定', '取消'],
+                    yes: function(index, layero) {
+                        var iframeWindow = window['layui-layer-iframe' + index];
+                        var checkStatus = iframeWindow.layui.table.checkStatus('goods_table-list');
+                        checkData = checkStatus.data;
+                        if (checkData.length == 0) {
+                            return showErrorMsg('请选择商品');
+                        }
+                        if(checkData.length>1){
+                            return showErrorMsg('只能选择一个商品');
+                        }
+                        $('#goods_id').val(checkData[0].goods_id);
+                        form.render();
+                        layer.close(index);
+                    }
+                });
+            });
+            
+            //关联文章
+            $('#selectArticle').click(function(){
+                layer.open({
+                    type: 2,
+                    title: '选择文章',
+                    content: '/tag_tools/selectarticle',
+                    maxmin: true,
+                    area: ['80%','80%'],
+                    btn: ['确定', '取消'],
+                    yes: function(index, layero) {
+                        var iframeWindow = window['layui-layer-iframe' + index];
+                        var checkStatus = iframeWindow.layui.table.checkStatus('table');
+                        checkData = checkStatus.data;
+                        if (checkData.length == 0) {
+                            return showErrorMsg('请选择文章');
+                        }
+                        var ids = '';
+                        $.each(checkData,function(key,val){
+                            ids += val.id+',';
+                        });
+                        
+                        $('#article_ids').val(ids.substring(0,ids.length-1));
+                        form.render();
+                        layer.close(index);
+                    }
+                });
+            });
+            
+            //关联赠礼
+            form.on('radio(coupon_type)', function (data) {
+                var option = '<option value="">选择赠礼</option>';
+                if(data.value>0){
+                    $('#coupon_id_div').show();
+                    getCoupon(data.value);
+                }else{
+                    $('#coupon_id_div').hide();
+                    $('select[name="coupon_id"]').html(option);
+                    form.render();
+                }
+            });
+
+            //是否推荐
+            form.on('radio(recommend)', function (data) {
+                if(data.value==1){
+                    $('#recommend_img').show();
+                }else{
+                    $('#recommend_img').hide();
+                }
+            });
+            
+            //获取优惠券
+            function getCoupon(type,coupon_id){
+                var option = '<option value="">选择赠礼</option>';
+                ajaxRequest('POST','/coupon/ajaxCouponList',{'type':type},'',function(res) {
+                    if (res.code == 1) {
+                        $.each(res.data,function(key,val){
+                            if(coupon_id && coupon_id==val.id){
+                                option += '<option value="'+val.id+'" selected>'+val.title+'</option>';
+                            }else{
+                                option += '<option value="'+val.id+'">'+val.title+'</option>';
+                            }
+                        });
+                        $('select[name="coupon_id"]').html(option);
+                    }
+                    form.render();
+                });
+            }
+                        
+        });
+    });
+</script>
+{/block}

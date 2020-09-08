@@ -1,0 +1,47 @@
+<textarea name="{$name}" id="summernote" class="summernote">{$value}</textarea>
+<link href="/static/util/summernote/bootstrap.css" rel="stylesheet">
+<link href="/static/util/summernote/summernote.css" rel="stylesheet">
+<script src="/static/util/summernote/bootstrap.js"></script>
+<script src="/static/util/summernote/summernote.js"></script>
+<!--引入中文JS包-->
+<script src="/static/util/summernote/summernote-zh-CN.js"></script>
+<script>
+    $("#summernote").summernote({
+        lang : 'zh-CN',// 语言
+        height : 496, // 高度
+        width : 1000, // 宽度
+        minHeight : 300, // 最小高度
+        placeholder : '请输入文章内容', // 提示
+        // summernote自定义配置
+        toolbar: [
+            ['operate', ['undo','redo']],
+            ['magic',['style']],
+            ['style', ['bold', 'italic', 'underline', 'clear']],
+            ['para', ['height','fontsize','ul', 'ol', 'paragraph']],
+            ['font', ['strikethrough', 'superscript', 'subscript']],
+            ['color', ['color']],
+            ['insert',['picture','video','link','table','hr']],
+            ['layout',['fullscreen','codeview']],
+        ],
+        callbacks : { // 回调函数
+            // 上传图片时使用的回调函数   因为我们input选择的本地图片是二进制图片，需要把二进制图片上传服务器，服务器再返回图片url，就需要用到callback这个回调函数
+            onImageUpload : function(files) {
+                var form=new FormData();
+                form.append('file',files[0])  //myFileName 是上传的参数名，一定不能写错
+                $.ajax({
+                    type:"post",
+                    url:"{:url('upload/layImage')}", //上传服务器地址
+                    dataType:'json',
+                    data:form,
+                    processData : false,
+                    contentType : false,
+                    cache : false,
+                    success:function(data){
+                        console.log(data.data.src)
+                        $('#summernote').summernote('editor.insertImage',data.data.src);
+                    }
+                })
+            }
+        }
+    });
+</script>

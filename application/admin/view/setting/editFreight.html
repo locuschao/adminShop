@@ -1,0 +1,317 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+
+    <input type="hidden" name="template_id" value="{$info.template_id}">
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">模板名称：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            <input name="template_name" type="text" value="{$info.template_name}" class="layui-input" required autocomplete="off"  placeholder="模板名称">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">计价方式：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-block">
+            {:widget('common/radio',array('type','type',array('1'=>'件数','2'=>"重量",'3'=>"体积"), $info.type))}
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">默认启用：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            {:widget('common/radio',array('is_enable_default','is_enable_default',array('0'=>'禁用','1'=>"启用"), $info.is_enable_default))}
+        </div>
+    </div>
+
+    <div class="layui-form-item" id="template_id" style="display:none">
+        <label class="layui-form-label">运费配置：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            <div style="width: 216px; margin: 0;">
+                <button type="button" class="layui-btn layui-btn-warm layui-btn-fluid addFreight">+</button>
+            </div>
+        </div>
+    </div>
+    <div class="addFreightTemplate">
+        {if !empty($freightConfigList)}
+        {volist  name="$freightConfigList" id="v"}
+        <div class="layui-form-item">
+            <label class="layui-form-label"></label>
+            <div class="layui-input-block">
+                <input type="text" name="region_name" placeholder="配送区域" lay-verify="required" value="{$v.region_name}" autocomplete="off" class="layui-input selectRegion" style="width:15%; float: left;">
+                <input type="hidden" name="freight[{$v.config_id}][region_id]" placeholder="配送区域" value="{$v.region_id}" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">
+                <input type="text" name="freight[{$v.config_id}][first_unit]" placeholder="首" value="{$v.first_unit}" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">
+                <input type="text" name="freight[{$v.config_id}][first_money]" placeholder="首运费" value="{$v.first_money}" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">
+                <input type="text" name="freight[{$v.config_id}][continue_unit]" placeholder="续" value="{$v.continue_unit}" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">
+                <input type="text" name="freight[{$v.config_id}][continue_money]" placeholder="续运费" value="{$v.continue_money}" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">
+                <button type="button" class="layui-btn layui-btn-danger delete_attr_btn" style="width:38px; padding:0; margin-left:0.5rem;">
+                    <i class="layui-icon layui-icon-close"></i>
+                </button>
+            </div>
+        </div>
+        {/volist}
+        {/if}
+    </div>
+    <div class="layui-form-item layui-hide">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn layui-btn-normal" id="submitBtn">确定</button>
+        </div>
+    </div>
+</form>
+<form class="layui-form" id="test" style="display:none;">
+    <div class="layui-form-item" id="selectedCat">
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-inline" style="width:30%">
+            <select name="cat_id" lay-verify="required" lay-filter="level_1" id="level_1"  lay-search="">
+                <option value="0" >选择省份</option>
+                {volist  name="$province" id="v"}
+                <option value="{$v.id}" >{$v.name}</option>
+                {/volist}
+            </select>
+        </div>
+        <div class="layui-input-inline" style="width:30%">
+            <select name="cat_id" lay-verify="required"  lay-filter="level_2" id="level_2" lay-search="">
+                <option value="0" >选择城市</option>
+            </select>
+        </div>
+        <div class="layui-input-inline" style="width:30%">
+            <select name="cat_id" lay-verify="required" lay-filter="level_3" id="level_3" lay-search="">
+                <option value="0" >选择区域</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn layui-btn-primary addRegion">添加</button>
+            <button type="button" class="layui-btn layui-btn-normal confirmRegion" >确定</button>
+        </div>
+    </div>
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var edit_url = "{:url('setting/editFreight')}";
+    var  ajax_category   = "{:url('region/ajaxGetCategory')}";
+</script>
+<script>
+    layui.use(['layer', 'form'], function(){
+        var  layer = layui.layer //弹层
+            ,form = layui.form //表单
+
+        $("#template_id").css("display", "block");
+
+
+        // 创建菜单
+        $('#submitBtn').click(function(){
+            $.ajax({
+                url: edit_url,
+                type: 'post',
+                data: $("#create-form").serialize(),
+                async: false,
+                dataType: 'json',
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    layer.msg('网络繁忙');
+                },
+                success: function(data) {
+                    if ( data.code === 0 ) {
+                        layer.msg(data.msg);
+                    } else {
+                        layer.msg(data.msg);
+                    }
+                }
+            });
+        });
+
+        var attr_idx = {$max_id};
+        $(document).on('click', '.addFreight', function() {
+            var html = '<div class="layui-form-item">\
+        <label class="layui-form-label"></label>\
+        <div class="layui-input-block">\
+            <input type="text" name="region_name" placeholder="配送区域" lay-verify="required" autocomplete="off" class="layui-input selectRegion" style="width:15%; float: left;">\
+            <input type="hidden" name="freight['+attr_idx+'][region_id]" placeholder="配送区域" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">\
+            <input type="text" name="freight['+attr_idx+'][first_unit]" placeholder="首" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">\
+            <input type="text" name="freight['+attr_idx+'][first_money]" placeholder="首运费" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">\
+            <input type="text" name="freight['+attr_idx+'][continue_unit]" placeholder="续" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">\
+            <input type="text" name="freight['+attr_idx+'][continue_money]" placeholder="续运费" lay-verify="required" autocomplete="off" class="layui-input" style="width:15%; float: left;">\
+            <button type="button" class="layui-btn layui-btn-danger delete_attr_btn" style="width:38px; padding:0; margin-left:0.5rem;">\
+                <i class="layui-icon layui-icon-close"></i>\
+            </button>\
+        </div>\
+    </div>';
+            $('.addFreightTemplate').after(html);
+            attr_idx++;
+        });
+
+        //删除内容
+        $(document).on('click', '.delete_attr_btn', function() {
+            $(this).parent().parent().remove();
+        });
+
+
+        var input = '';
+        var input_hidden = '';
+        //选择区域
+        $(document).on('click', '.selectRegion', function() {
+            input = $(this);
+            input_hidden = $(this).next();
+            $("#selectedCat").empty();
+            //自定页
+            layer.open({
+                type: 1,
+                title: "选择分类",
+                skin: 'layui-layer-demo', //样式类名
+                closeBtn: 0, //不显示关闭按钮
+                area: ['390px', '260px'],
+                anim: 2,
+                shadeClose: true, //开启遮罩关闭
+                content: $("#test"),
+                success: function(layero){
+                    layero.find('.layui-layer-btn').css('text-align', 'center'); //改变位置按钮居中，left左
+                },
+            });
+        });
+
+        //监听下拉框
+        form.on('select(level_1)', function(dataObj){
+            $("#level_2").empty();
+            var Html_2 = '<option value="">选择城市</option>';
+            $("#level_2").html(Html_2);
+            var Html_3 = '<option value="">选择区域</option>';
+            $("#level_3").html(Html_3);
+            Text = $("#level_1").find("option:selected").text();
+            var value = $("#level_1").val();
+
+            $.ajax({
+                url: ajax_category,
+                type: 'post',
+                data: {"id":value},
+                async: false,
+                dataType: 'json',
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    layer.msg('网络繁忙');
+                },
+                success: function(result) {
+                    if ( result.code == 1 ) {
+                        var $html = "";
+                        if(result.data != null) {
+                            $.each(result.data, function (index, item) {
+                                $html += "<option value='" + item.id + "'>" + item.name + "</option>";
+                            });
+                            $("#level_2").append($html);
+                            //append后必须从新渲染
+                            form.render('select');
+                        }
+                    } else {
+                        layer.msg(result.msg);
+                    }
+                }
+            });
+
+        });
+
+        form.on('select(level_2)', function(dataObj){
+            $("#level_3").empty();
+            var Html_3 = '<option value="">选择区域</option>';
+            $("#level_3").html(Html_3);
+            Text = $("#level_2").find("option:selected").text();
+            var value = $("#level_2").val();
+
+            $.ajax({
+                url: ajax_category,
+                type: 'post',
+                data: {"id":value},
+                async: false,
+                dataType: 'json',
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    layer.msg('网络繁忙');
+                },
+                success: function(result) {
+                    if ( result.code == 1 ) {
+                        var $html = "";
+                        if(result.data != null) {
+                            $.each(result.data, function (index, item) {
+                                $html += "<option value='" + item.id + "'>" + item.name + "</option>";
+                            });
+                            $("#level_3").append($html);
+                            //append后必须从新渲染
+                            form.render('select');
+                        }
+                    } else {
+                        layer.msg(result.msg);
+                    }
+                }
+            });
+
+        });
+
+        //添加
+        $(document).on('click', '.addRegion', function() {
+            var cat_id_1 = $("#level_1").val();
+            var cat_name_1 = $("#level_1").find("option:selected").text();
+            var cat_id_2 = $("#level_2").val();
+            var cat_name_2 = $("#level_2").find("option:selected").text();
+            var cat_id_3 = $("#level_3").val();
+            var cat_name_3 = $("#level_3").find("option:selected").text();
+            var cat_id = 0;
+            var cat_name = '';
+            if(cat_id_1>0){
+                cat_id = cat_id_1;
+                cat_name = cat_name_1;
+            }
+            if(cat_id_2>0){
+                cat_id = cat_id_2;
+                cat_name = cat_name_2;
+            }
+            if(cat_id_3>0){
+                cat_id = cat_id_3;
+                cat_name = cat_name_3;
+            }
+
+            if(cat_id==0){
+                layer.msg('请选择');return;
+            }
+            var arr = new Array();
+            $("input:checkbox[name='cat']:checked").each(function(i){
+                arr[i] = $(this).val();
+            });
+            var isExist = $.inArray(cat_id, arr);
+            if(isExist != -1) {
+                layer.msg('已经选择过');return;
+            }
+            var html = '<input type="checkbox"  name="cat" value="'+cat_id+'" title="'+cat_name+'" checked="">';
+            $('#selectedCat').append(html);
+            layui.use('form', function() {
+                var form = layui.form;
+                form.render();
+            });
+        });
+
+        //确认
+        $(document).on('click', '.confirmRegion', function() {
+            var arr = new Array();
+            var textArr = new Array();
+            $("input:checkbox[name='cat']:checked").each(function(i){
+                arr[i] = $(this).val();
+                textArr[i] = $(this).attr('title');
+                console.log(textArr);
+            });
+            var region_id = arr.join(",");
+            var region_name = textArr.join(",");
+            input.val(region_name);
+            input_hidden.val(region_id);
+            layer.closeAll();
+        });
+
+
+    });
+</script>
+{/block}

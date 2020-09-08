@@ -1,0 +1,13 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<form class="layui-form" id="batch_check" style="padding: 20px 0 0 0;">
+    <div class="layui-form-item">
+        <label class="layui-form-label">操作项：
+        </label>
+        <div class="layui-input-block">
+            {:widget('common/radio',array('check','check',array('1'=>"通过",'0'=>"未通过"), 1))}
+        </div>
+    </div>
+</form>
+{/block}

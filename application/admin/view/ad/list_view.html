@@ -1,0 +1,63 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">广告分类</label>
+                    <div class="layui-input-inline">
+                        {:widget('ad_pos/getList',array(''))}
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn" data-type="reload" id="search">搜索</button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body">
+            <table class="layui-hide" id="role" lay-data="{height: 'full-200', cellMinWidth: 80, page: true, limit:30}" lay-filter="test"></table>
+            <script type="text/html" id="barDemo">
+                <a class="layui-btn layui-btn-xs"  lay-event="edit">编辑</a>
+                <a class="layui-btn layui-btn-xs layui-btn-danger"  lay-event="del">删除</a>
+            </script>
+            <script type="text/html" id="toolbarDemo">
+                <div class="layui-btn-container">
+                    <div class="layui-btn layui-btn-sm add">添加广告</div>
+                </div>
+            </script>
+
+        </div>
+    </div>
+</div>
+{/block}
+
+
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var list_url = "{:url('ad/list_view')}";
+    var add_url = "{:url('ad/add')}";
+    var edit_url = "{:url('ad/edit')}";
+    var delete_url = "{:url('ad/delete_data')}";
+    var image_url = "{:url('upload/image')}";
+
+    $(function(){
+        $(document).on('click','.add',function(){
+            layer.open({
+                type: 2,
+                title: '添加广告',
+                content: add_url,
+                area: ['80%', '80%'],
+                maxmin: true,
+                btn:  ['确认','取消'],
+                yes: function(index, layero) {
+                    var submitBtn = layero.find('iframe').contents().find("#create-submit");
+                    submitBtn.click();
+                },
+            });
+        })
+    });
+</script>
+<script src="/static/js/ad.js"></script>
+{/block}

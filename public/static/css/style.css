@@ -1,0 +1,48 @@
+/**
+ *　自定义的样式
+ *  @author wuyh
+ *  @date 2020-02-03
+*/
+
+
+/** 必填 */
+div.required label:after {
+    content: " *";
+    color: red;
+}
+
+/** 图片 */
+.img {
+    vertical-align: middle;
+}
+.img-thumbnail {
+    padding: 4px;
+    line-height: 1.42857;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    -webkit-transition: all 0.2s ease-in-out;
+    -o-transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
+}
+.img-40-40 {
+    width:40px;
+    height:40px;
+}
+.img-50-50 {
+    width:50px;
+    height:50px;
+}
+.img-60-60 {
+    width:60px;
+    height:60px;
+}
+
+
+.layui-input[disabled], .layui-textarea[readonly] {
+    background-color: #eee;
+    opacity: 1;
+}

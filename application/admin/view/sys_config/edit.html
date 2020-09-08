@@ -1,0 +1,95 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<div class="layui-form" lay-filter="form-config" id="form-config">
+    <div class="layui-tab-content">
+        <div class="layui-form-item required">
+            <label class="layui-form-label">配置标题</label>
+            <div class="layui-input-block">
+                <input type="text" id="title" name="title" lay-verify="required" placeholder="请输入配置标题" autocomplete="off"
+                       class="layui-input" value="{$info.title|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item required">
+            <label class="layui-form-label">配置标识</label>
+            <div class="layui-input-block">
+                <input type="text" id="name" name="name" lay-verify="required" placeholder="请输入配置标识" autocomplete="off"
+                       class="layui-input" value="{$info.name|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item required">
+            <label class="layui-form-label">配置类型</label>
+            <div class="layui-input-block">
+                {:widget('common/singleSelect',array('type|1|配置类型|name|id',config('enum.config_type'),isset($info['type']) ? $info['type'] : 'text'))}
+            </div>
+        </div>
+        <div class="layui-form-item required">
+            <label class="layui-form-label">分组</label>
+            <div class="layui-input-block">
+                {:widget('common/singleSelect',array('sub_id|0|分组|title|id',$groupList,isset($info['sub_id']) ? $info['sub_id'] : 0))}
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">配置项</label>
+            <div class="layui-input-block">
+                <input type="text" id="extra" name="extra" placeholder="请输入配置项, 支付JSON格式" autocomplete="off"
+                       class="layui-input" value="{$info.extra|default=''|htmlspecialchars}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">说明</label>
+            <div class="layui-input-block">
+                <textarea name="remark" id="remark" placeholder="请输入说明" class="layui-textarea">{$info.remark|default=''}</textarea>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">排序</label>
+            <div class="layui-input-block">
+                <input type="text" name="sort" lay-verify="number" placeholder="排序" autocomplete="off"
+                       class="layui-input" value="{$info.sort|default=0}">
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="submit" id="submit" value="确认">
+            <input type="text" name="group_id" value="{$group_id|default=0}">
+            {notempty name="info.id"}<input type="text" name="id" value="{$info.id}">{/notempty}
+        </div>
+    </div>
+</div>
+{/block}
+{block name='javascript'}
+<script>
+    var tableId = '';
+    function child(d){
+        tableId = d;
+    }
+    layui.use(['layer', 'form'], function () {
+        var layer = layui.layer,
+            form = layui.form;
+
+        form.on('submit(submit)', function (data) {
+            var field = data.field;
+            var index = parent.layer.getFrameIndex(window.name);
+            var url = !!data.field.id == false ? 'add' : 'edit';
+
+            $.ajax({
+                type: 'POST',
+                url: url,
+                dataType: 'json',
+                data: field,
+                success: function (res) {
+                    if (res.code == 1) {
+                        showSuccessMsg(res.msg, function () {
+                            parent.layui.table.reload(tableId);
+                            parent.layer.close(index);
+                        });
+                    } else {
+                        showErrorMsg(res.msg);
+                    }
+                }
+            });
+        });
+    })
+</script>
+{/block}

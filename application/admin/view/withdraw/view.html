@@ -1,0 +1,140 @@
+<style>
+    .layui-table th {
+        background-color: #f8f8f8;
+    }
+
+    .layui-table tbody tr:hover, .layui-table thead tr, .layui-table[lay-even] tr:nth-child(even) {
+        background-color: transparent;
+    }
+</style>
+<div class="layui-card-body">
+    <div class="layui-form">
+        <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+            <legend>提现详情</legend>
+        </fieldset>
+
+        <table class="layui-table">
+            <colgroup>
+                <col width="150">
+                <col width="150">
+                <col width="200">
+                <col>
+            </colgroup>
+            <tbody>
+            <tr>
+                <th>ID</th>
+                <td>{$info.id}</td>
+                <th>用户ID</th>
+                <td>{$info.user.nickname} #{$info.user.id}</td>
+                <th>提现单号</th>
+                <td>{$info.withdraw_no}</td>
+                <th>申请时间</th>
+                <td>{$info.create_at}</td>
+            </tr>
+            <tr>
+                <th>提现类型</th>
+                <td>
+                    {if condition="($info.withdraw_type == 1)"} 零钱
+                    {elseif condition="$info.withdraw_type eq 2"/} 红包
+                    {/if}
+                </td>
+                <th>提现金额</th>
+                <td>{$info.money}</td>
+                <th>手续费</th>
+                <td>{$info.poundage}</td>
+                <th>实际到账金额</th>
+                <td>{$info.arrival_money}</td>
+            </tr>
+            <tr>
+                <th>审核时间</th>
+                <td>{if $info.audit_time == 0}-{else/}{$info.audit_time|date="Y-m-d H:i:s",###}{/if} </td>
+                <th>状态</th>
+                <td>
+                    {switch name="info.status" }
+                    {case value="0"}<span style="color: #FFB800;">未审核</span>{/case}
+                    {case value="1"}<span style="color: #009688;">审核通过，待打款</span>{/case}
+                    {case value="2"}<span style="color: #1E9FFF;">在途</span>{/case}
+                    {case value="3"}<span style="color: #d2d2d2;">已结算</span>{/case}
+                    {case value="4"}<span style="color: #FF5722;">驳回</span>{/case}
+                    {default /} -
+                    {/switch}
+                </td>
+                <th>第三方支付订单号</th>
+                <td>{$info.three_order_sn|default="-"}</td>
+                <th>到账时间</th>
+                <td>{if $info.arrival_time == 0}-{else/}{$info.arrival_time|date="Y-m-d H:i:s",###}{/if}</td>
+            </tr>
+            <tr>
+                <th>审核人</th>
+                <td >{$info.admin_name|default="-"}</td>
+                <th>审核备注</th>
+                <td colspan="5">{$info.audit_memo|default="无"}</td>
+            </tr>
+            </tbody>
+        </table>
+
+        {if condition="$info.status eq 0"}
+
+        <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+            <legend>审核操作</legend>
+        </fieldset>
+        <div class="layui-form">
+            <div class="layui-form" lay-filter="form-live" id="form-live">
+                <div class="layui-form-item" pane>
+                    <label class="layui-form-label">是否通过：</label>
+                    <div class="layui-input-block">
+                        <input type="radio" name="status" value="1" title="通过" checked="">
+                        <div class="layui-unselect layui-form-radio"><i class="layui-anim layui-icon"></i>
+                            <div>通过</div>
+                        </div>
+                        <input type="radio" name="status" value="4" title="驳回">
+                        <div class="layui-unselect layui-form-radio layui-form-radioed"><i
+                                class="layui-anim layui-icon layui-anim-scaleSpring"></i>
+                            <div>驳回</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">备注：</label>
+                    <div class="layui-input-block">
+                        <textarea name="memo" placeholder="请输入不通过必须要写原因" class="layui-textarea"
+                                  placeholder=""></textarea>
+                    </div>
+                </div>
+
+                <div class="layui-form-item layui-hide">
+                    <input type="button" lay-submit lay-filter="submit" id="submit" value="确认">
+                    {notempty name="info.id"}<input type="text" name="id" value="{$info.id}">{/notempty}
+                </div>
+            </div>
+        </div>
+        {/if}
+    </div>
+</div>
+<script>
+    layui.use(['layer', 'form'], function () {
+        var layer = layui.layer,
+            form = layui.form;
+
+        form.on('submit(submit)', function (data) {
+            showConfirm('请合适该次操作? <br>提交后将无法更改，且系统 自行向对应账户发起提现转账.',
+                function () {
+                    var field = data.field;
+                    var index = parent.layer.getFrameIndex(window.name);
+                    var url = "{:url('audit')}";
+
+                    ajaxRequest('POST', url, field, '', function (res) {
+                        if (res.code == 1) {
+                            showSuccessMsg(res.msg, function () {
+                                parent.layui.table.reload('table-list');
+                                parent.layer.close(index);
+                            });
+                        } else {
+                            showErrorMsg(res.msg);
+                        }
+                    });
+                })
+        });
+    });
+</script>

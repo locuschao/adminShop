@@ -1,0 +1,424 @@
+<?php
+/**
+ * [支付类]
+ */
+namespace app\api\controller\mall\v1;
+use app\api\controller\mall\Base;
+use app\common\model\GoodsOrder;
+use app\common\model\PayOrder;
+use app\common\model\Shipping;
+use app\common\model\Goods as GoodsModel;
+use app\common\model\PayNotify;
+use app\common\model\SpecGoodsPrice;
+use app\common\model\UserAddress;
+use app\common\model\UserCoupon;
+use app\common\service\CommonService;
+use app\common\service\DelayQueueService;
+use app\common\service\WxPay;
+use think\Config;
+use think\Db;
+
+
+class Payment extends Base
+{
+
+    private $mch_id;//商户号id
+    private $wx_key;//微信key
+    private $notify_url;//回调地址
+
+    const TIMER = 60 * 30;
+    const PAY_LIMIT_KEY = 'pay_limit_'; // 支付限制缓存前缀
+
+    protected $body = "微娱电商小程序-商品支付";
+
+    protected $user_id;
+    protected $order_sn = null;//订单号
+    protected $address_id;//用户地址
+    protected $consignee;
+    protected $province;
+    protected $city;
+    protected $area;
+    protected $town;
+    protected $address;
+    protected $mobile;
+    protected $shipping_id = 0;//物流
+    protected $shipping_name;//物流名称
+    protected $template_id = 0;//模板
+    protected $shipping_price;//运费
+    protected $goods_id;
+    protected $goods_num = 0;
+    protected $goods_price = 0;//单价
+    protected $goods_amount = 0;//商品总价
+    protected $item_id;//sku
+    protected $order_amount = 0;//订单金额
+    protected $amount = 0;//支付金额
+    protected $pay_type = 1;
+    protected $status = 0;
+    protected $payOrders = array();
+    protected $goodsOrders = array();
+    protected $payNotify = array();
+    protected $goodsInfo = array();
+    protected $goodsSku = array();
+    protected $goods_sku_num = 0;
+    protected $live_id = 0;
+    protected $user_coupon_id = 0;//优惠券id
+    protected $coupon_amount = 0;//优惠金额
+    protected $pay_style = 1;//支付方式[1微信支付 2混合支付 3优惠券支付 4钱包支付]
+
+
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->mch_id = Config::get('mch_id');
+        $this->wx_key = Config::get('wx_key');
+        $this->notify_url = Config::get('notify_url');
+        if (empty($this->mch_id) || empty($this->wx_key) || empty($this->notify_url)) {
+            $this->_error('MCH_PAY_ERROR');
+        }
+    }
+
+    //支付
+    public function Pay()
+    {
+        $request_data = file_get_contents('php://input');
+        if (empty($this->userInfo)) {
+            $this->_error('TOKEN_TIME_OUT');
+        }
+        $this->user_id = $this->userInfo['id'];
+        $openid = $this->userInfo['openid'];
+        log_message('支付['.$this->user_id.']:'.$request_data, 'log', Config::get('log_dir').'/mall/pay/');
+        $payOrderModel = new PayOrder();
+        $this->template_id = $this->_param('template_id');
+        $this->shipping_price = $this->_param('shipping_price');
+        $this->goods_id = $this->_param('goods_id');
+        $this->item_id = $this->_param('item_id');
+        $this->goods_num = $this->_param('goods_num');
+        $this->amount = $this->_param('amount');
+        $this->order_amount = $this->_param('order_amount');
+        $this->address_id = $this->_param('address_id');
+
+        //优惠券2020-03-27
+        $this->user_coupon_id = $this->_param('user_coupon_id');
+        $this->coupon_amount = $this->_param('coupon_amount');
+
+        //来源哪个直播间 2020-03-20
+        $this->live_id = $this->_param('live_id');
+
+        $this->shipping_id = $this->_param('shipping_id');
+        $userAddress = new UserAddress();
+        $userAddressInfo = $userAddress->getDetail(array('user_id' => $this->user_id, 'id' => $this->address_id));
+
+        if (empty($userAddressInfo)) {
+            $this->_error('DATA_NOT_ADDRESS');
+        }
+        $this->consignee = $userAddressInfo['consignee'];
+        $this->province = $userAddressInfo['province'];
+        $this->city = $userAddressInfo['city'];
+        $this->area = $userAddressInfo['area'];
+        $this->town = $userAddressInfo['town'];
+        $this->address = $userAddressInfo['address'];
+        $this->mobile = $userAddressInfo['mobile'];
+
+
+        $shippingModel = new Shipping();
+        $shipping = $shippingModel->getDetail(array('shipping_id' => $this->shipping_id));
+        if (empty($shipping)) {
+            $this->shipping_name = "普通快递";
+        } else {
+            $this->shipping_name = $shipping['shipping_name'];
+        }
+
+        //检测优惠券
+        $this->checkCoupon();
+
+        //检测商品库存
+        $this->checkGoodsStore();
+
+        //切换支付方式
+        $actual_amount = $this->calculateGoodsPrice($this->goods_price, $this->goods_num,$this->shipping_price);
+
+        if ($actual_amount < 0) {
+            $this->pay_style = 3;
+        }
+
+        if($actual_amount>0 && $this->coupon_amount>0){
+            $this->pay_style = 2;
+        }
+
+        // 判断5s内是否重复下单,解决支付并发问题
+        $cacheKey = self::PAY_LIMIT_KEY . $this->user_id;
+        $commonService = new CommonService();
+        if (!$commonService->requestDuplicateCheck($cacheKey, 5)) {
+            $this->_error('REQUEST_TOO_MUCH');
+        }
+
+        //下单
+        $order_sn = makeOrderid();
+        if (!($this->createOrder($order_sn))) {
+            $this->_error('ORDER_ERROR');
+        }
+
+
+        //入延迟队列
+        $parent_sn = 'WY'.makeOrderid();
+        $close_key = "close_order";
+        $delayQueueService = new DelayQueueService($close_key);
+        $delayQueueService->addTask("close_order_" . $parent_sn, time() + self::TIMER, array('parent_sn' => $parent_sn));
+
+
+        if($this->pay_style==3){
+            $this->_success('v1.order:pay');
+        }
+
+        //调微信支付
+        $detail = $this->setGoodsDetail(empty($this->goodsInfo['goods_name']) ? "" : $this->goodsInfo['goods_name'], empty($this->goodsSku['key_name']) ? "" : $this->goodsSku['key_name']);
+        $wxPayService = new WxPay();
+        $payParams = $wxPayService->pay($this->body, $detail, $parent_sn, $this->order_amount, $openid, $error);
+        if (empty($payParams)) {
+            $payOrderModel->update(array('status' => 1, 'pay_time' => time()), array('parent_sn' => $parent_sn, 'status' => 0));
+            $this->_error('PAY_PARAM_ERROR', $error);
+        }
+
+        //向直播间推送消息 2020-03-20
+//        if ($this->live_id > 0) {
+//            Hook::listen('notify_room');
+//        }
+
+        //更新优惠券
+        if($this->user_coupon_id>0 && $this->coupon_amount>0){
+            $userCouponModel = new UserCoupon();
+            $userCouponModel->update(array('is_use_type'=>1,'status'=>1,'use_time'=>time()),array('id'=>$this->user_coupon_id));
+        }
+
+        $payOrderModel = new PayOrder();
+        $result = $payOrderModel->update(array('parent_sn'=>$parent_sn),array('order_sn'=>$order_sn,'status'=>0,'order_status'=>0));
+        if(!$result){
+            $this->_error('PAY_PARAM_ERROR');
+        }
+
+        $this->_response['data']['order_id'] = $parent_sn;
+        $this->_response['data']['payParams'] = $payParams;
+        $this->_response['data']['pay_status'] = $this->status;
+        $this->_success('v1.order:pay');
+    }
+
+
+
+    //检测优惠券
+    private function checkCoupon(){
+        if (!empty($this->user_coupon_id) || !empty($this->coupon_amount)){
+            $userCouponModel = new UserCoupon();
+            $time = time();
+            $coupon = $userCouponModel->getDetail(array('user_id'=>$this->user_id,'id'=>$this->user_coupon_id,'status'=>0,'start_time'=>array('<=',$time),"expire_time"=>array('>=',$time)),'json_data');
+            if(empty($coupon)){
+                $this->_error('COUPON_EMPTY');
+            }
+            $coupon = json_decode($coupon['json_data'],true);
+            if($coupon['money'] !=$this->coupon_amount){
+                $this->_error('COUPON_AMOUNT_MATCH');
+            }
+        }
+    }
+
+
+    //计算支付金额
+    private function calculateGoodsPrice($singlePrice, $goods_num, $shipping_price)
+    {
+        $this->goods_amount = bcmul($singlePrice, $goods_num, 2);
+        $actual_amount = bcadd($this->goods_amount, $shipping_price, 2);
+        $actual_amount = bcsub($actual_amount, $this->coupon_amount, 2);
+        return $actual_amount;
+    }
+
+
+    //设置商品支付详情
+    private function setGoodsDetail($goods_name = null, $sku_name = null)
+    {
+        $detail = "";
+        if (!empty($goods_name)) {
+            $detail .= "商品名称:" . $goods_name . "<span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>";
+        }
+        if (!empty($sku_name)) {
+            $detail .= "规格:" . $sku_name;
+        }
+
+        return $detail;
+    }
+
+    //检查商品
+    private function checkGoodsStore()
+    {
+        $goodsModel = new GoodsModel();
+        $specGoodsPriceModel = new SpecGoodsPrice();
+
+        $this->goodsInfo = $goodsModel->getDetail(array('goods_id' => $this->goods_id));
+        if (empty($this->goodsInfo)) {
+            $this->_error('NOT_GOODS');
+        }
+
+        $this->goods_price = $this->goodsInfo['shop_price'];
+        $this->goods_sku_num = $this->goodsInfo['store_count'];
+        if (!empty($this->item_id)) {
+            //查询sku
+            $this->goodsSku = $specGoodsPriceModel->getGoodsSkuItemByItemId($this->goods_id, $this->item_id);
+            if (empty($this->goodsSku)) {
+                $this->_error('GOODS_SKU_EMPTY');
+            }
+            $this->goods_price = $this->goodsSku['price'];
+            $this->goods_sku_num = $this->goodsSku['store_count'];
+        }
+
+        if ($this->goods_num > $this->goods_sku_num) {
+            $this->_error('STORE_COUNT_ERROR');
+        }
+    }
+
+
+    //创建订单
+    private function createOrder($order_sn)
+    {
+        $payOrderModel = new PayOrder();
+        $goodsOrderModel = new GoodsOrder();
+        $payNotifyModel = new PayNotify();
+
+        //总订单
+        $time = time();
+        $this->payOrders['order_sn'] = $order_sn;
+        $this->payOrders['user_id'] = $this->user_id;
+        $this->payOrders['consignee'] = $this->consignee;
+        $this->payOrders['province'] = $this->province;
+        $this->payOrders['city'] = $this->city;
+        $this->payOrders['area'] = $this->area;
+        $this->payOrders['town'] = $this->town;
+        $this->payOrders['address'] = $this->address;
+        $this->payOrders['mobile'] = $this->mobile;
+        $this->payOrders['shipping_id'] = $this->shipping_id;
+        $this->payOrders['shipping_name'] = $this->shipping_name;
+        $this->payOrders['shipping_price'] = $this->shipping_price;
+        $this->payOrders['template_id'] = $this->template_id;
+        $this->payOrders['goods_price'] = $this->goods_amount;//商品总价
+        $this->payOrders['order_amount'] = $this->order_amount;//商品总价+运费-优惠
+        $this->payOrders['total_amount'] = $this->goods_amount+$this->shipping_price;//商品总价+运费
+        $this->payOrders['amount'] = $this->amount;//实际支付
+        $this->payOrders['paytype'] = $this->pay_type;
+        $this->payOrders['status'] = $this->status;
+        $this->payOrders['create_time'] = $time;
+        $this->payOrders['ip'] = request()->ip();
+        $this->payOrders['insertymd'] = date("Ymd", $time);
+        $this->payOrders['live_id'] = $this->live_id;
+        $this->payOrders['user_coupon_id'] = $this->user_coupon_id;
+        $this->payOrders['coupon_amount'] = $this->coupon_amount;
+
+        Db::startTrans();
+        $payId = $payOrderModel->insertGetId($this->payOrders);
+        
+        if ($payId <= 0) {
+            Db::rollback();
+            return false;
+        }
+
+        $this->goodsOrders['order_sn'] = $order_sn;
+        $this->goodsOrders['goods_id'] = $this->goods_id;
+        $this->goodsOrders['user_id'] = $this->user_id;
+        $this->goodsOrders['live_id'] = $this->live_id;
+        $this->goodsOrders['goods_name'] = $this->goodsInfo['goods_name'];
+        $this->goodsOrders['goods_sn'] = $this->goodsInfo['goods_sn'];
+        $this->goodsOrders['goods_num'] = $this->goods_num;
+        $this->goodsOrders['market_price'] = $this->goodsInfo['market_price'];
+        $this->goodsOrders['goods_price'] = empty($this->item_id) ? $this->goodsInfo['shop_price'] : $this->goodsSku['price'];
+        $this->goodsOrders['cost_price'] = $this->goodsInfo['cost_price'];
+        $this->goodsOrders['item_id'] = $this->item_id;
+        $this->goodsOrders['spec_key'] = empty($this->item_id) ? '' : $this->goodsSku['key'];
+        $this->goodsOrders['spec_key_name'] = empty($this->item_id) ? '' : $this->goodsSku['key_name'];
+        $this->goodsOrders['create_time'] = $time;
+        $goods_Order_id = $goodsOrderModel->insertGetId($this->goodsOrders);
+
+        if ($goods_Order_id <= 0) {
+            Db::rollback();
+            return false;
+        }
+
+        $param = array(
+            'user_id' => $this->user_id,
+            'order_info' => array($this->goodsOrders),
+        );
+
+        $this->payNotify['order_id'] = $order_sn;
+        $this->payNotify['callback_url'] = json_encode($param, true);
+        $this->payNotify['create_time'] = time();
+        $this->payNotify['status'] = 0;
+        $payNotifyId = $payNotifyModel->insertGetId($this->payNotify);
+
+        if ($payNotifyId <= 0) {
+            Db::rollback();
+            return false;
+        }
+        Db::commit();
+        return true;
+    }
+
+
+    //重新支付
+    public function repay(){
+        $request_data = file_get_contents('php://input');
+        if (empty($this->userInfo)) {
+            $this->_error('TOKEN_TIME_OUT');
+        }
+        $this->user_id = $this->userInfo['id'];
+        $openid = $this->userInfo['openid'];
+        log_message('重新支付['.$this->user_id.']:'.$request_data, 'log', Config::get('log_dir').'/mall/repay/');
+        //是否重新支付
+        $order_sn = $this->_param('order_id');
+        if(empty($order_sn)){
+            $this->_error('PAY_PARAM_ERROR');
+        }
+
+        $payOrderModel = new PayOrder();
+        //查询订单状态
+        $where = array();
+        $where['a.status'] = 0;
+        $where['a.order_sn'] = $order_sn;
+        $order = $payOrderModel->getUserOrderDetailByCondition($where);
+
+        if (empty($order)) {
+            $this->_error('PAY_ORDER_ERROR');
+        }
+
+        $this->goods_id = $order['goods_id'];
+        $this->item_id = $order['item_id'];
+        $this->goods_num = $order['goods_num'];
+        $this->user_coupon_id = $order['user_coupon_id'];
+        $this->coupon_amount = $order['coupon_amount'];
+
+        //检测商品
+        $this->checkGoodsStore();
+
+        //父订单
+        $parent_sn = 'WY'.makeOrderid();
+
+        //支付
+        $detail = $this->setGoodsDetail(empty($order['goods_name']) ? "" : $order['goods_name'], empty($order['spec_key_name']) ? "" : $order['spec_key_name']);
+        $this->status = $order['status'];
+        $wxPayService = new WxPay();
+        $payParams = $wxPayService->pay($this->body, $detail, $order_sn, $order['order_amount'], $openid, $error);
+        if (empty($payParams)) {
+            $payOrderModel->update(array('status' => 1, 'pay_time' => time()), array('order_sn' => $order_sn, 'status' => 0));
+            $this->_error('PAY_PARAM_ERROR', $error);
+        }
+
+        //更新父订单号
+        $result = $payOrderModel->update(array('parent_sn'=>$parent_sn),array('order_sn'=>$order_sn,'status'=>0,'order_status'=>0));
+        if(!$result){
+            $this->_error('PAY_PARAM_ERROR');
+        }
+
+        $this->_response['data']['order_id'] = $parent_sn;
+        $this->_response['data']['payParams'] = $payParams;
+        $this->_response['data']['pay_status'] = $this->status;
+        $this->_success('v1.order:repay');
+
+    }
+
+
+}

@@ -1,0 +1,6 @@
+<select name="{$name}" id="{$name}"  lay-verify="required" lay-search="" lay-filter="{$name}">
+    <option value="">请选择分类</option>
+    {volist  name="$categoryList" id="v"}
+    <option value="{$v.id}" {if $v.id == $select_id } selected {/if}  >{$v.name}</option>
+    {/volist}
+</select>

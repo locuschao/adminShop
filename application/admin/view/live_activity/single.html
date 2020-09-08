@@ -1,0 +1,235 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <table class="layui-hide" id="table-list"  lay-filter="table-list"></table>
+        </div>
+    </div>
+</div>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs"  lay-event="edit">编辑</a>
+</script>
+<script type="text/html" id="check-status">
+    {{#  if(d.status == 0){ }}
+    <span style="color: #F581B1;">禁用</span>
+    {{#  } else if (d.status == 1){ }}
+    <span style="color: #20a53a;">启用</span>
+    {{# }; }}
+</script>
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <span ><a href="{:url('live_activity/single',array('item_id'=>$item_id,'live_id'=>$live_id))}"><div class="layui-btn layui-btn-sm">添加{$title}</div></a></span>
+    </div>
+</script>
+
+<form class="layui-form" id="edit-form" style="padding: 20px 0 0 0;">
+    <input type="hidden" name="item_id" value="{$item_id}">
+    <input type="hidden" name="live_id" value="{$live_id}">
+    <div class="layui-form-item">
+        <label class="layui-form-label">*直播标题：
+        </label>
+        <div class="layui-form-mid layui-word-aux">{$info.title}</div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*直播互动：
+        </label>
+        <div class="layui-form-mid layui-word-aux">设置直播间开播中的活动</div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*开始时间：
+        </label>
+        <div class="layui-form-mid layui-word-aux">{$info.start_time}</div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*互动类型：
+        </label>
+        <div class="layui-input-inline">
+            {:widget('common/select',array('interact_type',$interact_type, -1))}
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*启动状态：
+        </label>
+        <div class="layui-input-block">
+            {:widget('common/radio',array('status','status',array('0'=>'关闭','1'=>"开启"),0))}
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*赠礼类型：
+        </label>
+        <div class="layui-input-block">
+            {:widget('common/radio',array('coupon_type','coupon_type',array('1'=>'优惠券','2'=>"红包",'3'=>"充换码"),0))}
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#FF0000;">（从当前可选优惠列表中选择）</span></div>
+    </div>
+
+    <div class="layui-form-item coupon" style="display: none;">
+        <label class="layui-form-label">优惠活动：</label>
+        <div class="layui-input-inline">
+            <select name="ext_id" lay-filter="ext_id" id="ext_id">
+                <option value="">请选择</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="edit-submit" id="edit-submit">保存</button>
+        </div>
+    </div>
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    layui.use(['layer', 'table', 'element', 'form', 'laydate'], function(){
+        var  layer = layui.layer //弹层
+            ,table = layui.table //表格
+            ,laydate = layui.laydate
+            ,element = layui.element
+            ,form = layui.form
+
+        laydate.render({
+            elem: '#start_time',
+            type: 'datetime',
+            calendar: true,
+        });
+        laydate.render({
+            elem: '#end_time',
+            type: 'datetime',
+            calendar: true,
+        });
+
+        //监听行工具事件
+        table.on('tool(table-list)', function(obj) {
+            var data = obj.data;
+            switch(obj.event)
+            {
+                case 'edit':
+                    location.href = "{:url('live_activity/edit_single')}?id=" + data.id+"&item_id=" +{$item_id}+"&live_id="+{$live_id};
+                    break;
+            }
+        });
+
+        //执行一个 table 实例
+        var tableInsOptions = table.render({
+            elem: '#table-list'
+            ,url: "{:url('list_single')}?item_id=" + {$item_id}+"&live_id="+{$live_id}
+            ,title: '单次互动'
+            ,method: 'POST'
+            ,limit: "{:config('cfg')['SYS_PAGE']}"
+            ,loading: true
+            ,toolbar: '#toolbarDemo' //开启头部工具栏
+            ,defaultToolbar: []
+            ,id:'table-list'
+            ,cols: [[
+                {type: 'checkbox', fixed: 'left'}
+                ,{field: 'id', title: 'id',  sort: true,'width':80}
+                ,{field: 'interact_type', title: '互动类型',align:'center', 'width':150}
+                ,{field: 'status', title: '状态',align:'center',templet:'#check-status'}
+                ,{field: 'reward_type', title: '赠礼', align:'center'}
+                ,{field: 'ext_id', title: '关联', align:'center'}
+                ,{field: 'amount', title: '领取数量',align:'center'}
+                ,{fixed: 'right', title: '操作', align:'center', toolbar: '#barDemo'}
+            ]]
+        });
+
+        form.on('radio(coupon_type)', function(data){
+            var value = data.value;
+            $('.coupon').css("display", "none");
+            $("#ext_id").empty();
+            if(value == 3){
+                $.ajax({
+                    url: "{:url('activity_gift/ajaxCodeList')}",
+                    type: 'post',
+                    async: false,
+                    dataType: 'json',
+                    error: function() {
+                        showErrorMsg('网络繁忙');
+                    },
+                    success: function(result) {
+                        if ( result.code == 1 ) {
+                            var $html = "";
+                            if(result.data != null) {
+                                $.each(result.data, function (index, item) {
+                                    $html += "<option value='" + item.id + "'>" + item.title + "</option>";
+                                });
+                                $("#ext_id").append($html);
+                                //append后必须从新渲染
+                                form.render('select');
+                            }
+                            $('.coupon').css("display", "block");
+                        } else {
+                            showErrorMsg(result.msg);
+                        }
+                    }
+                });
+            }else{
+                $.ajax({
+                    url: "{:url('coupon/ajaxCouponList')}",
+                    type: 'post',
+                    data: {type:value},
+                    async: false,
+                    dataType: 'json',
+                    error: function() {
+                        showErrorMsg('网络繁忙');
+                    },
+                    success: function(result) {
+                        if ( result.code == 1 ) {
+                            var $html = "";
+                            if(result.data != null) {
+                                $.each(result.data, function (index, item) {
+                                    $html += "<option value='" + item.id + "'>" + item.title + "</option>";
+                                });
+                                $("#ext_id").append($html);
+                                //append后必须从新渲染
+                                form.render('select');
+                            }
+                            $('.coupon').css("display", "block");
+                        } else {
+                            showErrorMsg(result.msg);
+                        }
+                    }
+                });
+            }
+
+        });
+
+
+        //添加
+        var is_click = 0;
+        $('#edit-submit').click(function() {
+            if (is_click > 0) {
+                showErrorMsg('请勿重复提交');
+            }
+            $.ajax({
+                url: "{:url('single')}",
+                type: 'post',
+                data: $("#edit-form").serialize(),
+                async: false,
+                dataType: 'json',
+                error: function () {
+                    showErrorMsg('网络繁忙');
+                },
+                success: function (data) {
+                    if (data.code === 0) {
+                        showErrorMsg(data.msg);
+                    } else {
+                        is_click++;
+                        showSuccessMsg(data.msg, function () {
+                            location.reload();
+                        });
+                    }
+                }
+            });
+        });
+
+    });
+</script>
+{/block}

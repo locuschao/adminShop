@@ -1,0 +1,77 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<div class="layui-form" lay-filter="form-live" id="form-live">
+    <div class="layui-tab-content">
+        <div class="layui-form-item required">
+            <label class="layui-form-label">开播时间</label>
+            <div class="layui-input-block">
+                <input type="text" id="start_time" name="start_time" lay-verify="required" placeholder="请选择开播放时间" autocomplete="off" class="layui-input" value="{$info.start_time|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item required">
+            <label class="layui-form-label">封面图</label>
+            {:widget('upload/uploadSingleImage',array('img_url' ,isset($info.img_url) ? $info.img_url : '' ,'192x192'))}
+        </div>
+        <div class="layui-form-item required">
+            <label class="layui-form-label">标题</label>
+            <div class="layui-input-block">
+                <input type="text" name="title" lay-verify="required" placeholder="标题" autocomplete="off" class="layui-input" value="{$info.title|default=''}">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">简介</label>
+            <div class="layui-input-block">
+                <textarea name="memo" placeholder="请输入简介" class="layui-textarea">{$info.memo|default=''}</textarea>
+            </div>
+        </div>
+        <div class="layui-form-item required">
+            <label class="layui-form-label">直播商品</label>
+            {:widget('goods/goodsSelect',array('goods_ids', isset($info.liveGoods) ? $info.liveGoods : '', config('cfg')['LIVE_GOODS_MAX_NUM']))}
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">状态</label>
+            <div class="layui-input-block">
+            {:widget('common/singleSelect',array('status|0|状态|name|id',config('enum')['live']['status'],isset($info['status']) ? $info['status'] : 0))}
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="submit" id="submit" value="确认">
+            {notempty name="info.id"}<input type="text" name="id" value="{$info.id}">{/notempty}
+        </div>
+    </div>
+</div>
+<script>
+    $(function() {
+        layui.use(['layer', 'form', 'laydate'], function() {
+            var  layer = layui.layer,
+                 form = layui.form,
+                 laydate = layui.laydate;
+
+            laydate.render({
+                elem: '#start_time',
+                type: 'datetime',
+                calendar: true,
+            });
+
+            form.on('submit(submit)', function(data) {
+                //判断是否全部加载完毕
+                var field = data.field; //获取提交的字段
+                var index = parent.layer.getFrameIndex(window.name);
+                var url = !!data.field.id == false ? "{:url('add')}" : "{:url('edit')}";
+
+                ajaxRequest('POST',url,field,'',function(res) {
+                    if (res.code == 1) {
+                        showSuccessMsg(res.msg, function() {
+                            parent.layui.table.reload('table'); //重载表格
+                            parent.layer.close(index); //再执行关闭
+                        });
+                    } else {
+                        showErrorMsg(res.msg);
+                    }
+                });
+            });
+        });
+    });
+</script>
+{/block}

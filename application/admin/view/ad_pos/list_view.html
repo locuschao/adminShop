@@ -1,0 +1,55 @@
+{extend name='public/base' /}
+
+{block name="content"}
+
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+            <div class="layui-form-item">
+            </div>
+        </div>
+        <div class="layui-card-body">
+            <table class="layui-hide" id="role" lay-filter="test"></table>
+            <script type="text/html" id="barDemo">
+                <a class="layui-btn layui-btn-xs"  lay-event="edit">编辑</a>
+                <a class="layui-btn layui-btn-xs layui-btn-danger"  lay-event="del">删除</a>
+            </script>
+            <script type="text/html" id="toolbarDemo">
+                <div class="layui-btn-container">
+                    <div class="layui-btn layui-btn-sm add">添加分类</div>
+                </div>
+            </script>
+        </div>
+    </div>
+</div>
+
+{/block}
+
+
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var list_url = "{:url('ad_pos/list_view')}";
+    var add_url = "{:url('ad_pos/add')}";
+    var edit_url = "{:url('ad_pos/edit')}";
+    var delete_url = "{:url('ad_pos/delete_data')}";
+    var image_url = "{:url('upload/image')}";
+	
+	$(function(){
+        $(document).on('click','.add',function(){
+            layer.open({
+                type: 2,
+                title: '添加广告类型',
+                content: add_url,
+                area: ['50%', '50%'],
+                maxmin: true,
+                btn:  ['确认','取消'],
+                yes: function(index, layero) {
+                    var submitBtn = layero.find('iframe').contents().find("#create-submit");
+                    submitBtn.click();
+                },
+            });
+        })
+    });
+</script>
+<script src="/static/js/ad_pos.js"></script>
+{/block}

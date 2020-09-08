@@ -1,0 +1,62 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<form class="layui-form" id="save-form" style="padding: 20px 0 0 0;">
+
+    <input name="id" type="hidden" class="layui-input" required autocomplete="off" value="{$info.id}">
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">菜单名称</label>
+        <div class="layui-input-inline">
+            <input name="name" type="text" class="layui-input" lay-verify="required" autocomplete="off" value="{$info.name}" placeholder="菜单名称">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：服装</div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">父级</label>
+        <div class="layui-input-inline">
+            {:widget('goods/getCategoryMenu',array('pid',$info.pid))}
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">图片</label>
+        <div class="layui-input-inline">
+            <input name="image" type="text"  class="layui-input image" value="{$info.image}" autocomplete="off"   placeholder="图片">
+        </div>
+        <div class="layui-upload">
+            <button type="button" class="layui-btn" id="adImage">上传图片</button>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">权重</label>
+        <div class="layui-input-inline">
+            <input name="weight" type="text" class="layui-input" lay-verify="required" autocomplete="off" value="{$info.weight}"  placeholder="权重">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否显示</label>
+        <div class="layui-input-inline">
+            <input type="radio" name="is_show" value="1" data-val="1" title="显示" class="layui-input" {if $info.is_show==1} checked {/if} lay-filter="is_show">
+            <input type="radio" name="is_show" value="0" data-val="0" title="隐藏" class="layui-input" {if $info.is_show==0} checked {/if} lay-filter="is_show">
+        </div>
+    </div>
+    <div class="layui-form-item layui-hide">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="save-submit" id="save-submit">确定</button>
+        </div>
+    </div>
+
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var list_url = "{:url('goods_category/list_view')}";
+    var add_url = "{:url('goods_category/add')}";
+    var edit_url = "{:url('goods_category/edit')}";
+    var delete_url = "{:url('goods_category/delete_data')}";
+    var image_url = "{:url('upload/image')}";
+</script>
+<script src="/static/js/goods_category.js"></script>
+{/block}

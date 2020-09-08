@@ -1,0 +1,106 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table-tool-temp {
+        padding-right: 0px;
+    }
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">获取来源：</label>
+                    <div class="layui-input-inline">
+                        {:widget('common/select',array('get',$get_style, -1))}
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">使用状态：</label>
+                    <div class="layui-input-inline">
+                        {:widget('common/select',array('status',array('0'=>'未使用','1'=>"已使用",'2'=>'已过期'), -1))}
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">消费方式：</label>
+                    <div class="layui-input-inline">
+                        {:widget('common/select',array('is_use_type',array('1'=>"商品消费",'2'=>'红包提现'), -1))}
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label"></label>
+                    <div class="layui-input-inline">
+                        <button class="layui-btn" lay-submit lay-filter="search" data-type="reload" id="search">搜索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body">
+            <table class="layui-hide" id="table-list"  lay-filter="table-list"></table>
+        </div>
+    </div>
+</div>
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+       <span style="color:#999999">筛选统计：领取数量：500，未使用数量：200，已使用数量：130，过期数量：170</span>
+    </div>
+</script>
+<script type="text/html" id="check-status">
+    {{#  if(d.status == 0){ }}
+    <span style="color: #F581B1;">未使用</span>
+    {{#  } else if (d.status == 1){ }}
+    <span style="color: #20a53a;">已使用</span>
+    {{#  } else if (d.status == 2){ }}
+    <span style="color: #FFB800;">已过期</span>
+    {{# }; }}
+</script>
+
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    layui.use(['layer', 'table', 'element', 'form', 'laydate'], function(){
+        var  layer = layui.layer //弹层
+            ,table = layui.table //表格
+            ,form = layui.form
+
+        //执行一个 table 实例
+        table.render({
+            elem: '#table-list'
+            ,url: "{:url('coupon_detail')}?id="+{$id}
+            ,title: '券面管理'
+            ,method: 'POST'
+            ,page: true //开启分页
+            ,limit: "{:config('cfg')['SYS_PAGE']}"
+            ,loading: true
+            ,toolbar: '#toolbarDemo' //开启头部工具栏
+            ,defaultToolbar: []
+            ,id:'table-list'
+            ,cols: [[
+                {type: 'checkbox', fixed: 'left'}
+                ,{field: 'id', title: 'id',  sort: true,'width':80}
+                ,{field: 'get', title: '获取来源',align:'center', 'width':150}
+                ,{field: 'remark', title: '来源名称',align:'center'}
+                ,{field: 'coupon_sn', title: '子券号',align:'center','width':150}
+                ,{field: 'user_id', title: '获取人id',align:'center'}
+                ,{field: 'status', title: '使用状态',align:'center',templet:'#check-status'}
+                ,{field: 'is_use_type', title: '使用方向', align:'center'}
+                ,{field: 'get_time', title: '获取时间', align:'center'}
+                ,{field: 'use_time', title: '使用时间',align:'center'}
+                ,{field: 'expire_time', title: '到期时间',align:'center'}
+            ]]
+        });
+
+        //筛选条件
+        form.on('submit(search)', function (data) {
+            table.reload('table-list',{
+                where: data.field,
+                page: { curr: 1 }
+            });
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+    });
+</script>
+{/block}

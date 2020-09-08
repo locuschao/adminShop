@@ -1,0 +1,49 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table-tool-temp {
+        padding-right: 0px;
+    }
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+        </div>
+        <div class="layui-card-body">
+            <table class="layui-hide" id="table-list"  lay-filter="table-list"></table>
+        </div>
+    </div>
+</div>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var id={$id};
+    layui.use(['layer', 'table', 'element', 'form', 'laydate'], function(){
+        var  layer = layui.layer //弹层
+            ,table = layui.table //表格
+            ,form = layui.form
+
+        //执行一个 table 实例
+        table.render({
+            elem: '#table-list'
+            ,url: "{:url('view')}?id="+id
+            ,title: '活动商品'
+            ,method: 'POST'
+            ,page: true //开启分页
+            ,limit: "{:config('cfg')['SYS_PAGE']}"
+            ,loading: true
+            ,defaultToolbar: []
+            ,skin: 'line'
+            ,id:'table-list'
+            ,cols: [[
+                {type: 'checkbox', fixed: 'left'}
+                ,{field: 'goods_id', title: '商品id',align:'center'}
+                ,{field: 'goods_name', title: '商品名称',align:'center'}
+                ,{field: 'goods_sn', title: '商品货号',align:'center'}
+                ,{field: 'shop_price', title: '出售价',align:'center'}
+            ]]
+        });
+    });
+</script>
+{/block}

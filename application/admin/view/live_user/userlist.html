@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>用户列表</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="/static/layui/css/layui.css" media="all">
+    <link rel="stylesheet" href="/static/css/admin.css" media="all">
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">用户名</label>
+                    <div class="layui-input-block">
+                        <input name="nickname" type="text" id="nickname"  class="layui-input" autocomplete="off"   placeholder="用户名">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">账号</label>
+                    <div class="layui-input-block">
+                        <input name="username" type="text" id="username"  class="layui-input" autocomplete="off"   placeholder="账号">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn" data-type="reload" id="search">搜索</button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body">
+            <table class="layui-hide" id="role" lay-data="{height: 'full-200', cellMinWidth: 80, page: true, limit:30}" lay-filter="test"></table>
+        </div>
+    </div>
+</div>
+
+<!-- 启用禁用 -->
+<script type="text/html" id="switchState">
+    <input type="checkbox" name="status" value="{{d.id}}" lay-skin="switch" lay-text="启用|禁用" lay-filter="state" {{d.status == 1 ? 'checked' : '' }} >
+</script>
+
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var live_user_url = "{:url('live_user/userList')}";
+    var ajax_user_url = "{:url('live_user/ajaxUpdateLiveUser')}";
+</script>
+<script>
+    layui.use(['layer', 'table','form'], function(){
+        var  layer = layui.layer //弹层
+            ,table = layui.table //表格
+            ,form = layui.form //表单
+
+        //执行一个 table 实例
+        table.render({
+            elem: '#role'
+            ,url: live_user_url //数据接口
+            ,title: '用户列表'
+            ,method: 'POST'
+            ,page: true //开启分页
+            ,loading: true
+            ,skin: 'line'
+            ,toolbar: '#toolbarDemo' //开启头部工具栏，并为其绑定左侧模板
+            //,totalRow: true //开启合计行
+            ,id:'testReload'
+            ,cols: [[ //表头
+                {type: 'checkbox', fixed: 'left'}
+                ,{field: 'id', title: 'ID',  sort: true}
+                ,{field: 'username', title: '用户账号',align:'center'}
+                ,{field: 'nickname', title: '用户名',align:'center'}
+                ,{field: 'mobile', title: '电话',align:'center'}
+                ,{field: 'oauth', title: '来源',align:'center'}
+                ,{field: 'openid', title: '第三方唯一标示',align:'center'}
+                ,{field: 'unionid', title: '用户的唯一性',align:'center'}
+                ,{field: 'reg_time', title: '注册时间',align:'center'}
+                ,{field: 'login_time', title: '最后登录时间',align:'center'}
+                ,{field: 'status', title: '状态',align:'center',templet: '#switchState',}
+                // ,{fixed: 'right', title: '操作',width: 165, align:'center', toolbar: '#barDemo'}
+            ]]
+        });
+
+
+        var $ = layui.$, active = {
+            reload: function(){
+
+                //执行重载
+                table.reload('testReload', {
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                    ,where: {
+                        nickname: $("#nickname").val(),
+                        username: $("#username").val(),
+                    }
+                }, 'data');
+            }
+        };
+
+        $('#search').on('click', function(){
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+        //启用禁用
+        form.on('switch(state)', function(obj) {
+            $.ajax({
+                type: 'post',
+                url: ajax_user_url,
+                dataType: 'json',
+                async: false,
+                data: {
+                    status:obj.elem.checked == false ? 0 : 1,
+                    id:obj.value
+                },
+                success:function(res) {
+                    if (res.code == 0) {
+                        layer.msg(res.msg);
+                    } else {
+                        layer.msg(res.msg);
+                    }
+                }
+            });
+        });
+
+        //监听行工具事件
+        table.on('tool(test)', function(obj){ //注：tool 是工具条事件名，test 是 table 原始容器的属性 lay-filter="对应的值"
+            var data = obj.data //获得当前行数据
+                ,layEvent = obj.event; //获得 lay-event 对应的值
+            if(layEvent === 'edit'){
+                edit({
+                    title:'编辑',
+                    url: "{:url('')}?id=" + data.id
+                });
+            }
+        });
+
+        function edit(option) {
+            layer.open({
+                type: 2,
+                title: option.title,
+                content: option.url,
+                maxmin: true,
+                area: !!option.area == false ? ['80%', '80%'] : option.area,
+            });
+        }
+
+    });
+</script>
+{/block}

@@ -1,0 +1,239 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<!--内容-->
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+    <div class="layui-form-item">
+        <label class="layui-form-label">*商品名称：
+        </label>
+        <div class="layui-input-inline">
+            <input name="goods_name" type="text" class="layui-input" lay-verify="required" autocomplete="off"  placeholder="商品名称">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">商品名称不可超过30个字</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*货号：
+        </label>
+        <div class="layui-input-inline">
+            <input name="goods_sn" type="text" class="layui-input" lay-verify="required" autocomplete="off"  placeholder="货号">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">商品的注册条码序列</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">编码：
+        </label>
+        <div class="layui-input-inline">
+            <input name="goods_code" type="text" class="layui-input"  autocomplete="off"  placeholder="编码">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">商家自定编码</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">商品简介：
+        </label>
+        <div class="layui-input-inline">
+            <input name="goods_remark" type="text" class="layui-input"  autocomplete="off"  placeholder="简介">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">不可超过60个汉字</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">商品品牌：
+        </label>
+        <div class="layui-input-inline">
+            {:widget('goods/getBrand',array(0))}
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">关键词：
+        </label>
+        <div class="layui-input-inline">
+            <input name="keywords" type="text" class="layui-input"  autocomplete="off"  placeholder="关键词">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">用于搜索查询商品，与商品详情呈现关键词列，多个关键字以|分隔</span></div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">市场价：
+        </label>
+        <div class="layui-input-inline">
+            <input name="market_price" type="text" class="layui-input"  autocomplete="off"  placeholder="市场价">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">该商品的其它渠道价格，为空时商品详情将不显示对应的信息</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*出售价：
+        </label>
+        <div class="layui-input-inline">
+            <input name="shop_price" type="text" class="layui-input" lay-verify="required" autocomplete="off"  placeholder="出售价格">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">该商品的商城直售</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">采购价：
+        </label>
+        <div class="layui-input-inline">
+            <input name="cost_price" type="text" class="layui-input"  autocomplete="off"  placeholder="成本价">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">该商品的原始订购价格</span></div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">商品排序：
+        </label>
+        <div class="layui-input-inline">
+            <input name="sort" type="text" class="layui-input"  autocomplete="off" value="0"  placeholder="商品排序">
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">用户商品在前端的呈现顺序规则，默认为0</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">商品包邮：
+        </label>
+        <div class="layui-input-inline">
+            {:widget('common/radio',array('is_free_shipping','freeRadio',array('0'=>'包邮'),0))}
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">该商品的物流费用</span></div>
+    </div>
+
+    <div class="layui-form-item" id="template_id" style="display:none">
+        <label class="layui-form-label">运费模板：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            {:widget('goods/getFreightTemplate',array('template_id',0))}
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否新品：
+        </label>
+        <div class="layui-input-inline">
+            {:widget('common/radio',array('is_new','is_new',array('0'=>'否','1'=>"是"), 1))}
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">该商品的上新状态，前端是否显示"新品"标签</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否推荐：
+        </label>
+        <div class="layui-input-inline">
+            {:widget('common/radio',array('is_recommend','is_recommend',array('0'=>'否','1'=>"是"), 1))}
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">该商品的推荐状态，前端是否显示"推荐"标签</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否热卖：
+        </label>
+        <div class="layui-input-inline">
+            {:widget('common/radio',array('is_hot','is_hot',array('0'=>'否','1'=>"是"), 1))}
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">该商品的热卖状态，前端是否显示"热卖"标签</span></div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*商品分类：
+        </label>
+        <div class="layui-input-inline">
+            {:widget('goods/getCategory',array('cat_id_1',1,0))}
+        </div>
+        <div class="layui-input-inline">
+            {:widget('goods/getCategory',array('cat_id_2',2,0))}
+        </div>
+<!--        <div class="layui-input-inline">-->
+<!--            {:widget('goods/getCategory',array('cat_id_3',3,0))}-->
+<!--        </div>-->
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">*商品参数：
+        </label>
+        <div class="layui-input-inline">
+            {:widget('goods/getGoodsType',array('goods_type',0))}
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">该商品的详细生产属性，根据所选属性分类读取</span></div>
+    </div>
+
+    <div id="attr">
+
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">审核状态：
+        </label>
+        <div class="layui-input-block">
+            {:widget('common/radio',array('check','check',array('0'=>'待审核','1'=>"已通过",'2'=>"未通过"), 0))}
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">设置该商品是否可于前端显示（具有商品发布权限人可操作项）</span></div>
+    </div>
+    <div class="layui-form-item is_on_sale" style="display: none;" >
+        <label class="layui-form-label">上架状态：
+        </label>
+        <div class="layui-input-block">
+            {:widget('common/radio',array('is_on_sale','is_on_sale',array('0'=>'未上架','1'=>"已上架",'2'=>"已下架"), 0))}
+        </div>
+        <div class="layui-form-mid layui-word-aux"><span style="color:#999999;">设置该商品是否可于前端提交购买（由具有商品发布权限人可操作项）</span></div>
+    </div>
+
+    <div class="layui-form-item layui-form-text">
+        <label class="layui-form-label">商品详情页</label>
+        <div class="layui-input-block">
+            {:widget('common/editor',array('goods_content',"请描写商品详情提升购买力度"))}
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-input-block layui-hide">
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="create-submit" id="create-submit">确定</button>
+        </div>
+    </div>
+</form>
+{/block}
+
+
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var goods_id = 0;
+    var template_id = 0;
+    var list_url = "{:url('goods/list_view')}";//列表url
+    var save_url = "{:url('goods/save')}";//保存
+    var edit_url = "{:url('goods/edit')}";//编辑
+    var add_url = "{:url('goods/add')}";//添加
+    var ajax_category = "{:url('ajax/ajaxGetCategory')}";
+    var ajax_attr = "{:url('ajax/ajaxGetAttr')}";
+    var add_image_url = "{:url('goods_image/add')}";
+</script>
+<script src="/static/js/goods.js"></script>
+<script>
+    //保存商品
+    var is_click=0
+    $('#create-submit').click(function(){
+        if(is_click>0){
+            showErrorMsg('请勿重复提交');
+        }
+        $.ajax({
+            url: add_url,
+            type: 'post',
+            data: $("#create-form").serialize(),
+            async: false,
+            dataType: 'json',
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                showErrorMsg('网络繁忙');
+            },
+            success: function(data) {
+                if ( data.code === 0 ) {
+                    showErrorMsg(data.msg);
+                } else {
+                    is_click++;
+                    showSuccessMsg(data.msg,function(){
+                        parent.location.reload();
+                    });
+                }
+            }
+        });
+    });
+</script>
+{/block}

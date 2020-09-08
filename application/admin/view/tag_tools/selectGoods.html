@@ -1,0 +1,121 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table-cell{
+        height: auto;
+    }
+</style>
+<div class="layui-form admin-form">
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label" style="width:80px;">商品名称：</label>
+            <div class="layui-input-inline">
+                <input type="text" name="goods_name" style="width:200px;" placeholder="请输入商品名称" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+
+        <div class="layui-inline">
+            <button class="layui-btn layui-btn-sm" lay-submit lay-filter="goods-search">查询</button>
+        </div>
+        <div class="layui-inline"><div class="layui-form-mid">您选择了:<span id="tagGoodsNum">0</span>/{$goods_max}个商品</div></div>
+    </div>
+</div>
+<div class="layui-card-body">
+    <table class="layui-hide" id="goods_table-list" lay-filter="table-list"></table>
+</div>
+
+<script>
+    var table_data = new Array();
+    var ids = {};
+
+
+    function child(data) {
+        return ids;
+    }
+
+    layui.use(['layer', 'table'], function(){
+        var  layer = layui.layer, table = layui.table;
+        table.render({
+            elem: '#goods_table-list',
+            id:'goods_table-list',
+            url: "{:url('tag_tools/selectGoods',['no_ids' => $no_ids])}",
+            title: '商品列表',
+            method: 'POST',
+            limit: "{:config('cfg')['SYS_PAGE']}",
+            page: true,
+            loading: true,
+            skin: 'line',
+            cols: [[
+                {type: 'checkbox'},
+                {field: 'goods_id', title: 'ID', sort: true, width:60},
+                {field: 'image_url', title: '图片', width:80,  templet: function(data){
+                        return '<a href="javascript:void(0);" onclick=showImg("'+data.image_url+'")><image class="img-thumbnail img-50-50" src="'+data.image_url+'"/></a>';
+                    }},
+                {field: 'goods_sn', title: '商品编号', align:'left' ,width:150},
+                {field: 'goods_name', title: '商品名称'},
+                {field: 'shop_price', title: '价格', align:'center', sort: true, width:100}
+            ]],
+            done: function (res, curr, count) {
+                table_data=res.data;
+                for(var i=0;i< res.data.length;i++){
+                    if(ids[res.data[i].goods_id]){
+                        res.data[i]["LAY_CHECKED"] = 'true';
+                        var index= res.data[i]['LAY_TABLE_INDEX'];
+                        $('#goods_table-list + div .layui-table-body tr[data-index=' + index + '] input[type="checkbox"]').prop('checked', true);
+                        $('#goods_table-list + div .layui-table-body tr[data-index=' + index + '] input[type="checkbox"]').next().addClass('layui-form-checked');
+                    }
+                }
+                var checkStatus = layui.table.checkStatus('tagGoodsTable');
+                if(checkStatus.isAll){
+                    $('#goods_table-list + div .layui-table-header th[data-field="0"] input[type="checkbox"]').prop('checked', true);
+                    $('#goods_table-list + div .layui-table-header th[data-field="0"] input[type="checkbox"]').next().addClass('layui-form-checked');
+                }
+            }
+        });
+
+        //监听表格复选框选择
+        layui.table.on('checkbox(table-list)', function(obj){
+            if(obj.checked){
+                if(obj.type=='one'){
+                    ids[obj.data.goods_id] = obj.data;
+                }else{
+                    for(var i=0;i<table_data.length;i++){
+                        ids[table_data[i].goods_id] = table_data[i];
+                    }
+                }
+            }else{
+                if(obj.type=='one'){
+                    delete ids[obj.data.goods_id];
+                }else{
+                    for(var i=0;i<table_data.length;i++){
+                        delete ids[table_data[i].goods_id];
+                    }
+                }
+            }
+            $('#tagGoodsNum').html(Object.getOwnPropertyNames(ids).length);
+        });
+
+        layui.form.on('submit(goods-search)', function(data){
+            layui.table.reload('goods_table-list', {
+                where: data.field
+                ,page: {
+                    curr: 1
+                }
+            });
+            return false;
+        });
+
+        // $(document).on('click', '.submit', function() {
+        //     table.reload('table', {
+        //         page: {
+        //             curr: 1
+        //         },
+        //         where: {
+        //             goods_name:$('#goods_name').val()
+        //         }
+        //     });
+        // });
+    });
+</script>
+{/block}

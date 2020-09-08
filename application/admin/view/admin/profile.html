@@ -1,0 +1,89 @@
+{extend name='public/base' /}
+{block name='content'}
+<div class="layui-row layui-col-space15">
+    <div class="layui-col-md12">
+        <div class="layui-card">
+            <div class="layui-card-header">个人资料</div>
+            <div class="layui-card-body" pad15="">
+                <div class="layui-form" lay-filter="profile-form">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">我的角色</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="role" value="{$info.adminRole.name}" disabled readonly="" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux">不可修改</div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">用户名</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="account" value="{$info.account}" disabled class="layui-input">
+                        </div>
+                        <div class="layui-form-mid layui-word-aux">不可修改</div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">昵称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="name" value="{$info['name']}" lay-verify="required" autocomplete="off"
+                                   placeholder="请输入昵称" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">性别</label>
+                        <div class="layui-input-block">
+                            {:widget('common/radio',array('sex','sex', config('enum.sex'), isset($info['sex']) ? $info['sex'] : 0))}
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">手机</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="mobile" value="{$info['mobile']}" lay-verify="mobile" autocomplete="off"
+                                   class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">邮箱</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="email" value="{$info['email']}" lay-verify="email" autocomplete="off"
+                                   class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item layui-hide">
+                        <input type="text" name="id" value="{$info.id}">
+                    </div>
+                    <div class="layui-form-item">
+                        <div class="layui-input-block">
+                            <button class="layui-btn layui-btn-normal" lay-submit="" lay-filter="set-profile">确认修改
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{/block}
+
+{block name='javascript'}
+<script>
+    $(function() {
+        layui.use(['form'], function() {
+            var form = layui.form;
+
+            form.on('submit(set-profile)', function(data) {
+                //判断是否全部加载完毕
+                ajaxRequest('POST',"{:url('profile')}",data.field,'',function(res) {
+                    if (res.code == 1) {
+                        showSuccessMsg(res.msg, function() {
+                           return false;
+                        });
+                    } else {
+                        showErrorMsg(res.msg);
+                    }
+                });
+            });
+            return false;
+        });
+    });
+</script>
+{/block}
+

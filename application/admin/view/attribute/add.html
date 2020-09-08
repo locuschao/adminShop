@@ -1,0 +1,60 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*属性名称：
+        </label>
+        <div class="layui-input-inline">
+            <input name="name" type="text" class="layui-input" lay-verify="required" autocomplete="off"  placeholder="属性名称">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：服装</div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">*产品参数：
+        </label>
+        <div class="layui-input-inline">
+            <button type="button" class="layui-btn layui-btn-fluid addattr">+新增参数</button>
+        </div>
+    </div>
+    <div class="attr">
+
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">*产品规格：
+        </label>
+        <div class="layui-input-inline">
+            <button type="button" style="margin-top:10px;" class="layui-btn layui-btn-warm layui-btn-fluid addspec">+新增规格</button>
+            <div class="layui-form-mid layui-word-aux" style="width:450px;">
+                <span style="color:#FF0000;">编辑该商品的售卖规格与对应库存，商品为0时不可下单选购商品</span>
+            </div>
+        </div>
+    </div>
+    <div class="spec">
+    </div>
+
+    <div class="layui-form-item layui-hide">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="create-submit" id="create-submit">确定</button>
+        </div>
+    </div>
+
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var attr_idx = 1;
+    var spec_idx = 1;
+    var type_id = 0;
+    var list_url = "{:url('attribute/list_view')}";
+    var add_url = "{:url('attribute/add')}";
+    var edit_url = "{:url('attribute/edit')}";
+    var delete_url = "{:url('attribute/delete_data')}";
+    var image_url = "{:url('upload/image')}";
+    var save_url = "{:url('attribute/save')}";
+    var ajax_url = "{:url('ajax/getGoodsSpec')}";
+</script>
+<script src="/static/js/arrt_type.js"></script>
+{/block}

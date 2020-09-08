@@ -1,0 +1,6 @@
+<select name="brand_id" id="brand_id"  lay-search="" lay-filter="pos_id">
+    <option value="">请选择品牌</option>
+    {volist  name="$brandList" id="v"}
+    <option value="{$v.id}" {if $v.id == $select_id } selected {/if}>{$v.name}</option>
+    {/volist}
+</select>

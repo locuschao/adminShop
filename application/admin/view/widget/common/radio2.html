@@ -1,0 +1,8 @@
+
+{if !empty($list)}
+{volist  name="$list" id="v"}
+{if $key==$selected_id}
+<input type="radio" name="{$name}" value="{$key}" title="{$v}" lay-filter="{$lay_filter}" {if $key==$selected_id} checked {/if} >
+{/if}
+{/volist}
+{/if}

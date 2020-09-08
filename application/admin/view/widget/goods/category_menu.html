@@ -1,0 +1,6 @@
+<select name="{$name}" id="{$name}"  lay-search="" lay-filter="{$name}">
+    <option value="">请选择分类</option>
+    {volist  name="$ruledata" id="v"}
+    <option value="{$key}" {if $key == $select_id } selected {/if}>{$v}</option>
+    {/volist}
+</select>

@@ -1,0 +1,54 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-form-label {
+        width: 120px;
+    }
+
+</style>
+<form class="layui-form" id="edit-form" style="padding: 20px 0 0 0;">
+    <div class="layui-form-item">
+        <input type="hidden" name="goods_id" value="{$goods_id}">
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">*商品名称：
+        </label>
+        <div class="layui-input-inline">
+            <div class="layui-form-mid layui-word-aux" style="width:450px;"><span style="color:#FF0000;">{$goods.goods_name}</span></div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">*货号：
+        </label>
+        <div class="layui-input-inline">
+            <div class="layui-form-mid layui-word-aux" style="width:450px;" ><span style="color:#FF0000;">{$goods.goods_sn}</span></div>
+        </div>
+    </div>
+    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 50px;">
+        <legend>*规格库存：根据上面勾选的规格明细合成，单个明细规格独立库存数量，为0时将不可进行下单购买，默认为0</legend>
+    </fieldset>
+    <div class="sku" style="width:750px;margin-left:50px;">
+
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block layui-hide" style=" width: 200px;margin: 0 auto;padding-top: 10px;">
+            <button type="button" class="layui-btn layui-btn-normal" id="edit-submit">确定</button>
+        </div>
+    </div>
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var goods_id = {$goods_id};
+    var type_id = {$type_id};
+    var add_url = "{:url('goods_spec/add')}";
+    var save_url = "{:url('goods_spec/save')}";
+    var list_url = "{:url('goods/list_view')}";
+    var ajax_url = "{:url('ajax/getGoodsSpec')}";
+    var ajax_sku = "{:url('ajax/getGoodsSku')}";
+    var edit_spec_url = "{:url('attribute/edit')}";
+    var ajax_sku_value = "{:url('ajax/getGoodsSpecPrice')}";
+</script>
+<script src="/static/js/goods_spec.js"></script>
+{/block}

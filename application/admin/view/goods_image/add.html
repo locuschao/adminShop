@@ -1,0 +1,159 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-form-radio>i {
+        color: #c2c2c2;
+    }
+</style>
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+    <input type="hidden" name="goods_id" value="{$goods_id}">
+    <div class="layui-form-item">
+        <label class="layui-form-label">*商品名称：
+        </label>
+        <div class="layui-input-inline">
+            <div class="layui-form-mid layui-word-aux" style="width:450px;"><span style="color:#FF0000;">{$goods.goods_name}</span></div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">*货号：
+        </label>
+        <div class="layui-input-inline">
+            <div class="layui-form-mid layui-word-aux" style="width:450px;" ><span style="color:#FF0000;">{$goods.goods_sn}</span></div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">
+            *商品图片：
+        </label>
+        <div class="layui-upload">
+            <button type="button" class="layui-btn" id="images">多图片上传</button>
+            <span style="color:#FF0000;">(添加和删除都需要保存)编辑该商品于前端的实际轮播图，最佳尺寸：800x800（px）
+            </span>
+        </div>
+    </div>
+    <table id="table-list" lay-filter="table-list"></table>
+    <div class="layui-form-item">
+        <div class="layui-input-block layui-hide" style=" width: 200px;margin: 0 auto;padding-top: 10px;">
+            <button type="button" class="layui-btn layui-btn-normal" id="create-submit">确定</button>
+        </div>
+    </div>
+
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script type="text/html" id="table-tool-bar">
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+</script>
+<script type="text/html" id="image">
+    <a href="javascript:void(0);" onclick=showImg("{{ d.src}}") ><image class="img-thumbnail img-50-50" src={{ d.src}}/></a>
+</script>
+<script>
+    var count = {$count};
+    var goods_id = {$goods_id};
+    var image_url = "{:url('upload/image')}";
+    var add_url = "{:url('goods_image/add')}";
+</script>
+<script>
+    layui.use(['table','upload', 'form'],function(){
+        var layer = layui.layer,
+            table = layui.table,
+            $ = layui.$,
+            upload = layui.upload,
+            form = layui.form,
+            dataList = [];
+
+
+
+        var tableInsOptions = {
+            elem: '#table-list'
+            ,id:'table-list'
+            ,url:"{:url('goods_image/images')}?goods_id="+goods_id
+            ,defaultToolbar: []
+            ,parseData: function(res){
+                if(res.data.length>0){
+                    $.each(res.data, function(index,item) {
+                        if(item.is_seleted==1){
+                            res.data[index].LAY_CHECKED=true
+                        }
+                    });
+                }
+
+            }
+            ,cols: [[
+                {type:'radio',fixed: 'center',title: '单选'}
+                ,{field: 'src', title: '图像', edit: 'text',align:'center',templet:"#image"}
+                ,{field: 'src', title: '上传url', edit: 'text',align:'center'}
+                ,{title:'操作', toolbar: '#table-tool-bar', unresize:true}
+            ]]
+            ,data: dataList
+        };
+
+        var tableIns  = layui.table.render(tableInsOptions);
+
+        table.on('tool(table-list)', function(obj) {
+            var data = obj.data;
+            switch(obj.event)
+            {
+                case 'del':
+                    showConfirm('您确定删除此条记录？', function(index) {
+                        obj.del();
+                        layer.close(index);
+                        return true;
+                    });
+                    break;
+            }
+        });
+        var data = table.cache;
+        upload.render({
+            elem: '#images'
+            ,url: image_url //改成您自己的上传接口
+            ,multiple: true
+            ,done: function(res){
+                if (res.code == 0) return false;
+                var len = data['table-list'].length;
+                data['table-list'].push({goods_id: goods_id,src: res.url,is_seleted:0,LAY_TABLE_INDEX:len });
+                tableInsOptions.data = data['table-list'];
+                table.render({
+                    elem: '#table-list'
+                    ,data: tableInsOptions.data
+                    ,id:'table-list'
+                    ,cols: [[
+                        {type:'radio',fixed: 'center',title: '单选'}
+                        ,{field: 'src', title: '图像', edit: 'text',align:'center',templet:"#image"}
+                        ,{field: 'src', title: '上传url', edit: 'text',align:'center'}
+                        ,{title:'操作', toolbar: '#table-tool-bar', unresize:true}
+                    ]]
+                });
+            }
+        });
+
+        //添加
+        $('#create-submit').click(function(){
+            $.ajax({
+                url: add_url,
+                type: 'post',
+                data: {src:table.cache['table-list'],goods_id:goods_id},
+                async: false,
+                dataType: 'json',
+                error: function() {
+                    showErrorMsg('网络繁忙');
+                },
+                success: function(data) {
+                    if ( data.code === 0 ) {
+                        showErrorMsg(data.msg);
+                    } else {
+                        showSuccessMsg(data.msg,function(){
+                            parent.location.reload();
+                        });
+                    }
+                }
+            });
+        });
+
+
+    });
+
+</script>
+
+{/block}

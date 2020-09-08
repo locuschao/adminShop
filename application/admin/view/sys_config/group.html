@@ -1,0 +1,107 @@
+{extend name='public/base' /}
+{block name='content'}
+<style>
+    .layui-form-item label {
+        width: 200px;
+    }
+
+    .layui-form-item .input-inline {
+        width: 50%;
+    }
+</style>
+<div class="layui-tab" lay-filter="sys-config-tab" style="padding:10px;">
+    <ul class="layui-tab-title">
+        {foreach name="$config_group_list" item="val" key="k"}
+            <li {if condition="$val.id eq $group_id"}class="layui-this"{/if}>
+                <a href="{:url('group', ['group_id'=>$val.id])}">{$val.title}</a>
+            </li>
+        {/foreach}
+    </ul>
+
+    <div class="layui-tab-content">
+        <div class="layui-tab-item layui-show">
+            {notempty name="children"}
+            <form class="layui-form" action="">
+                {foreach name="children" item="child"}
+                <fieldset class="layui-elem-field layui-field-title">
+                    <legend>{$child.title}</legend>
+                </fieldset>
+                    {notempty name="child.configs"}
+                            {foreach name="child.configs" item="vo"}
+                                {if $vo.type eq 'hidden'}
+                                    <input name="{$vo.name}" id="{$vo.name}" type="hidden" value="{$vo.value|default=''}">
+                                {else}
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label">{$vo.title}：</label>
+                                        {if $vo.type eq 'text'}
+                                            <!-- 单行文本 -->
+                                            <div class="layui-input-block">
+                                                <div class="layui-inline input-inline">
+                                                <input name="{$vo.name}" value="{$vo.value|default=''}" autocomplete="off" placeholder="请输入{$vo.title}" class="layui-input" type="text">
+                                                </div>
+                                                {notempty name="vo.remark"}
+                                                <div class="layui-inline">
+                                                    <div class="layui-form-mid layui-word-aux">{$vo.remark}</div>
+                                                </div>
+                                                {/notempty}
+                                            </div>
+                                        {elseif $vo.type eq 'password'}
+                                            <div class="layui-input-block">
+                                                <div class="layui-inline input-inline">
+                                                    <!-- 密码 -->
+                                                    <input name="{$vo.name}" value="{$vo.value|default=''}" placeholder="请输入{$vo.title}" autocomplete="off" class="layui-input" type="password">
+                                                </div>
+                                            </div>
+                                            {elseif $vo.type eq 'select'}
+                                            <div class="layui-input-block">
+                                                <div class="layui-inline input-inline">
+                                                    {:widget('common/singleSelect',array($vo['format_name'],isset($vo['extra']) ? json_decode($vo['extra'], true) : [], isset($vo['value']) ? $vo['value'] : ''))}
+                                                </div>
+                                            </div>
+                                        {/if}
+                                     </div>
+                                {/if}
+                            {/foreach}
+                    {/notempty}
+                {/foreach}
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button type="submit" class="layui-btn" lay-submit="" lay-filter="save">保存</button>
+                    </div>
+                </div>
+            </form>
+            {/notempty}
+        </div>
+    </div>
+</div>
+{/block}
+{block name='javascript'}
+<script>
+    layui.use(['layer', 'element', 'form'], function(){
+        var element = layui.element,
+            layer = layui.layer
+            form = layui.form;
+
+        //一些事件监听
+        element.on('tab(sys-config-tab)', function(data){
+            layer.load(0, {
+                shade: false,
+                time: 2*1000
+            })
+        });
+
+        form.on('submit(save)', function(data) {
+            formData = data.field;
+            if (!formData) {
+                layer.msg('请先完善数据');
+                return false;
+            }
+
+            ajaxRequest('POST', '{:url("group")}',formData,'', function (e) {
+                layer.msg(e.msg);
+            })
+            return false;
+        });
+    });
+</script>
+{/block}

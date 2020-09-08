@@ -1,0 +1,118 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+    <input type="hidden" name="shipping_id" value="{$info.shipping_id}">
+    <div class="layui-form-item">
+        <label class="layui-form-label">快递名称：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            <input name="shipping_name" type="text" class="layui-input" value="{$info.shipping_name}" required autocomplete="off"  placeholder="快递公司名称">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：顺丰快递</div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">快递编码：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            <input name="shipping_code" type="text" class="layui-input" value="{$info.shipping_code}" required autocomplete="off"  placeholder="快递编码">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：shunfeng</div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">快递描述：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            <input name="shipping_desc" type="text" class="layui-input" value="{$info.shipping_desc}" required autocomplete="off"  placeholder="快递描述">
+        </div>
+        <div class="layui-form-mid layui-word-aux">例如：顺丰快递，真好用</div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">LOGO：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            <input name="shipping_logo" type="text"  class="layui-input shipping_logo" value="{$info.shipping_logo}" autocomplete="off"   placeholder="LOGO">
+        </div>
+        <div class="layui-upload">
+            <button type="button" class="layui-btn" id="adImage">上传图片</button>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否启用：
+            <span class="required">*</span>
+        </label>
+        <div class="layui-input-inline">
+            <input type="radio" name="is_open" value="1" data-val="1" title="启用" class="layui-input" {if $info.is_open == 1}checked {/if} lay-filter="is_open">
+            <input type="radio" name="is_open" value="0" data-val="0" title="禁用" class="layui-input" {if $info.is_open == 0}checked {/if} lay-filter="is_open">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <a href="{:url('setting/logistics')}"><button type="button" class="layui-btn layui-btn-primary">返回</button></a>
+            <button type="button" class="layui-btn layui-btn-normal" id="create-submit">确定</button>
+        </div>
+    </div>
+
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var upload_url = "{:url('upload/image')}";
+    var edit_url = "{:url('setting/editLogistics')}";
+    var list_url = "{:url('setting/logistics')}";
+</script>
+<script>
+    layui.use(['layer', 'form','upload'], function(){
+        var  layer = layui.layer //弹层
+            ,form = layui.form //表单
+            ,upload = layui.upload
+
+        var uploader = upload.render({
+            elem: '#adImage'
+            ,url: upload_url //改成您自己的上传接口
+            ,before: function(obj){
+            }
+            ,done: function(res){
+                //如果上传失败
+                if(res.code == 0){
+                    return layer.msg('上传失败');
+                }else{
+                    //上传成功
+                    $('.shipping_logo').val(res.url); //图片链接（base64）
+                    return layer.msg('上传成功');
+                }
+            }
+            ,error: function(){
+                layer.msg('上传失败');
+            }
+        });
+
+        // 创建菜单
+        $('#create-submit').click(function(){
+            $.ajax({
+                url: edit_url,
+                type: 'post',
+                data: $("#create-form").serialize(),
+                async: false,
+                dataType: 'json',
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    layer.msg('网络繁忙');
+                },
+                success: function(data) {
+                    if ( data.code === 0 ) {
+                        layer.msg(data.msg);
+                    } else {
+                        layer.msg(data.msg);
+                        location.href = list_url;
+                    }
+                }
+            });
+        });
+
+    });
+</script>
+{/block}

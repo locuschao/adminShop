@@ -1,0 +1,114 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table-tool-temp {
+        padding-right: 0px;
+    }
+</style>
+
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+    <input name="id" type="hidden" class="layui-input" required autocomplete="off" value="{$info.id}">
+    <div class="layui-form-item">
+        <label class="layui-form-label">账号</label>
+        <div class="layui-input-inline">
+            <input name="account" type="text" class="layui-input" lay-verify="required" autocomplete="off" readonly value="{$info.account}" placeholder="请输入渠道账号">
+        </div>
+        <div class="layui-form-mid layui-word-aux">2-16位字符，支持中文，数字，字母及组合</div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">姓名</label>
+        <div class="layui-input-inline">
+            <input name="username" type="text" class="layui-input" lay-verify="required" autocomplete="off" value="{$info.name}" placeholder="请输入姓名">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">登录密码</label>
+        <div class="layui-input-inline">
+            <input name="password" type="password" class="layui-input" autocomplete="off" placeholder="请输入登录密码">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">确认密码</label>
+        <div class="layui-input-inline">
+            <input name="repassword" type="password" class="layui-input" autocomplete="off" placeholder="请输入确认密码">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">所属等级</label>
+        <div class="layui-input-inline">
+            <input type="radio" name="level" value="1" data-val="1" title="超级管理员" class="layui-input"  {if $info.level == 1} checked {/if} lay-filter="level">
+            <input type="radio" name="level" value="2" data-val="2" title="普通管理员" class="layui-input"  {if $info.level == 2} checked {/if} lay-filter="level">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">所属角色</label>
+        <div class="layui-input-inline">
+            {volist  name="roles" id="vv"}
+            <input type="radio" name="role" value="{$vv.id}" data-val="{$vv.id}" title="{$vv.name}" class="layui-input" {if $info.role == $vv.id} checked {/if} lay-filter="role">
+            {/volist}
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否可用</label>
+        <div class="layui-input-inline">
+            <input type="radio" name="isable" value="1" data-val="1" title="开启" class="layui-input" {if $info.isable == 1} checked {/if} lay-filter="isable">
+            <input type="radio" name="isable" value="0" data-val="0" title="关闭" class="layui-input" {if $info.isable == 0} checked {/if} lay-filter="isable">
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-hide">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="create-submit" id="create-submit">确定</button>
+        </div>
+    </div>
+
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var admin_edit_url = "{:url('admin/editAdmin')}";
+</script>
+<script>
+    layui.use(['layer', 'form'], function(){
+        var  layer = layui.layer //弹层
+            ,form = layui.form //表单
+
+        // 创建菜单
+        form.on('submit(create-submit)', function(data) {
+            $.ajax({
+                url: admin_edit_url,
+                type: 'post',
+                data: {
+                    "id": $("input[name=id]").val(),
+                    "name": $("input[name=username]").val(),
+                    "password": $("input[name=password]").val(),
+                    "repassword": $("input[name=repassword]").val(),
+                    "level": $("input[name=level]:checked").attr("data-val"),
+                    "isable": $("input[name=isable]:checked").attr("data-val"),
+                    "role": $("input[name=role]:checked").attr("data-val"),
+                },
+                async: false,
+                dataType: 'json',
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    showErrorMsg('网络繁忙');
+                },
+                success: function(data) {
+                    if ( data.code === 0 ) {
+                        showErrorMsg(data.msg);
+                    } else {
+                        showSuccessMsg(data.msg, function() {
+							parent.location.reload();
+						});
+                    }
+                }
+            });
+        });
+    });
+</script>
+{/block}

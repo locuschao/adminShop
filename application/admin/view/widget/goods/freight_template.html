@@ -1,0 +1,6 @@
+<select name="{$name}" id="{$name}"  lay-search="" lay-filter="{$name}">
+    <option value="">请选择运费模板</option>
+    {volist  name="$brandList" id="v"}
+    <option value="{$v.id}" {if $v.id == $select_id } selected {/if}>{$v.name}</option>
+    {/volist}
+</select>

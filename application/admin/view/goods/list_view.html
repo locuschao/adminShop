@@ -1,0 +1,116 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table-tool-temp {
+        padding-right: 0px;
+    }
+</style>
+<div class="layui-fluid">
+    <div class="layui-card">
+        <div class="layui-form layui-card-header layuiadmin-card-header-auto">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">商品搜索：</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="keywords" id="keywords"  placeholder="请输入" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">审核状态：</label>
+                    <div class="layui-input-inline">
+                        {:widget('common/select',array('check',array('0'=>'待审核','1'=>"已通过",'2'=>"未通过"), -1))}
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">上架状态：</label>
+                    <div class="layui-input-inline">
+                        {:widget('common/select',array('is_on_sale',array('0'=>'未上架','1'=>"上架",'2'=>'已下架'), -1))}
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button class="layui-btn" data-type="reload" id="search">搜索</button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card-body">
+            <table class="layui-hide" id="role" lay-data="{height: 'full-200', cellMinWidth: 80, page: true, limit:30}" lay-filter="test"></table>
+        </div>
+    </div>
+</div>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs"  lay-event="edit">商品编辑</a>
+    <a class="layui-btn layui-btn-warm layui-btn-xs"  lay-event="addSpec">添加规格</a>
+    <a class="layui-btn layui-btn-warm layui-btn-xs"  lay-event="addImage">添加图片</a>
+    <a class="layui-btn layui-btn-normal layui-btn-xs copybtn"  lay-event="copyGoods">复制商品</a>
+</script>
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <span ><a href="javascript:;"><div class="layui-btn layui-btn-sm" onclick="addGood()">创建商品</div></a></span>
+        <span style="float: right;"><a href="javascript:;"><div class="layui-btn layui-btn-sm layui-btn-danger batchAddSpec" data-type="batchAddSpec" >批量规格</div></a></span>
+        <span style="float: right;"><a href="javascript:;"><div class="layui-btn layui-btn-sm layui-btn-danger batchAddGoods"  data-type="batchAddGoods" >批量创建</div></a></span>
+        <span style="float: right;"><a href="javascript:;"><div class="layui-btn layui-btn-sm layui-btn-normal batchCheck" data-type="batchCheck" >批量审核</div></a></span>
+        <span style="float: right;"><a href="javascript:;"><div class="layui-btn layui-btn-sm layui-btn-normal batchPublish" data-type="batchPublish" >批量发布</div></a></span>
+    </div>
+</script>
+<script type="text/html" id="check-status">
+    {{#  if(d.check == 0){ }}
+    <span style="color: #F581B1;">待审核</span>
+    {{#  } else if (d.check == 1){ }}
+    <span style="color: #20a53a;">通过</span>
+    {{#  } else if (d.check == 2) {}}
+    <span style="color: #00ABE9;">未通过</span>
+    {{# }; }}
+</script>
+<script type="text/html" id="public-status">
+    {{#  if(d.is_on_sale == 0){ }}
+    <span style="color: #F581B1;">未上架</span>
+    {{#  } else if (d.is_on_sale == 1){ }}
+    <span style="color: #20a53a;">上架</span>
+    {{#  } else if (d.is_on_sale == 2) {}}
+    <span style="color: #00ABE9;">已下架</span>
+    {{# }; }}
+</script>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var goods_id = 0;
+    var template_id = 0;
+    var list_url = "{:url('goods/list_view')}";//列表url
+    var save_url = "{:url('goods/save')}";//保存
+    var edit_url = "{:url('goods/edit')}";//编辑
+    var add_url = "{:url('goods/add')}";//添加
+    var batch_check_url = "{:url('goods/batch_check')}";//批量审核
+    var batch_sale_url = "{:url('goods/batch_sale')}";//批量上架
+    var batch_add_goods_url = "{:url('goods/batch_add_goods')}";//批量添加
+    var batch_add_spec_url = "{:url('goods/batch_add_spec')}";//批量规格
+    var copy_goods_url = "{:url('goods/copy_goods')}";//添加
+    var ajax_category = "{:url('ajax/ajaxGetCategory')}";
+    var ajax_attr = "{:url('ajax/ajaxGetAttr')}";
+    var add_image_url = "{:url('goods_image/add')}";
+    var edit_spec_url = "{:url('goods_spec/add')}";
+    var ajax_batch_save_url = "{:url('ajax/batch_save')}";
+</script>
+<script src="/static/js/goods.js"></script>
+<script>
+    //添加商品
+    function addGood() {
+        var title = "添加商品";
+        layer.open({
+            type: 2,
+            title: title,
+            content: add_url,
+            area: ['100%', '100%'],
+            maxmin: true,
+            btn:  ['确认','取消'],
+            yes: function(index, layero) {
+                var submitBtn = layero.find('iframe').contents().find("#create-submit");
+                submitBtn.click();
+            },
+            id: 'LAY_layuipro',
+        });
+    }
+</script>
+{/block}

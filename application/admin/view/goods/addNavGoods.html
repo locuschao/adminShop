@@ -1,0 +1,86 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<div id="goodsList" class="demo-transfer"></div>
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <div style="width:16%;margin:0 auto;">
+                <button type="button"   class="layui-btn layui-btn-normal" lay-demotransferactive="getData" id="create-submit">确定</button>
+            </div>
+        </div>
+    </div>
+</form>
+<style>
+    .layui-transfer.layui-form.layui-border-box {
+        margin: 0 auto;
+        width: 116%;
+    }
+
+</style>
+<script type="text/javascript" src="/static/js/jquery.min.js"></script>
+<script src="/static/layui/layui.js"></script>
+<script>
+
+    layui.use(['transfer', 'layer', 'util'], function(){
+        var $ = layui.$
+            ,transfer = layui.transfer
+            ,layer = layui.layer
+            ,util = layui.util;
+
+        var goodsList = {$goodsList};
+        var goodsIds = {$ids};
+        var cate_id = {$cate_id};
+
+        //显示搜索框
+        transfer.render({
+            elem: '#goodsList'
+            ,data: goodsList
+            ,width: "40%"
+            ,height: 500
+            ,id: 'key' //定义唯一索引
+            ,value: goodsIds
+            ,title: ['商品列表', '选择商品']
+            ,showSearch: true
+        })
+
+        //批量办法定事件
+        util.event('lay-demoTransferActive', {
+            getData: function(othis){
+                var getData = transfer.getData('key'); //获取右侧数据
+                var ids = [];
+                if(getData.length<=0){
+                    layer.msg('选择商品');return;
+                }
+
+                $.each(getData, function (index, item) {
+                    ids.push(item.value);
+                });
+                if(ids.length<=0){
+                    layer.msg('选择商品');return;
+                }
+                $.ajax({
+                    url: "{:url('goods/addNavGoods')}",
+                    type: 'post',
+                    data: {ids:ids,cate_id:cate_id},
+                    async: false,
+                    dataType: 'json',
+                    error: function(XMLHttpRequest, textStatus, errorThrown) {
+                        layer.msg('网络繁忙');
+                    },
+                    success: function(data) {
+                        if ( data.code === 0 ) {
+                            layer.msg(data.msg);
+                        } else {
+                            layer.msg(data.msg);
+                        }
+                    }
+                });
+            }
+        });
+
+
+    });
+</script>
+{/block}
+

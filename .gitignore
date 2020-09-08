@@ -1,0 +1,17 @@
+# ---> Thinkphp5
+
+/runtime
+/php-beast.log
+/.vscode
+/.idea
+
+/composer.lock
+/composer.json
+
+/application/database.php
+/application/config.php
+/application/admin/config.php
+/application/api/config.php
+/.env
+
+/application/crontab/close_order_cron.sh

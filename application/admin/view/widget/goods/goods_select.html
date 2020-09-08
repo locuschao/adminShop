@@ -1,0 +1,101 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<div class="layui-input-inline">
+	<button type="button" class="layui-btn goods-add">
+		<i class="layui-icon ">&#xe608;</i> 选择商品
+	</button>
+	<input type="hidden" name="{$name}" id="{$time}" lay-verify="required" lay-reqText="请选择商品" value="{$goodsIds|default=''}"/>
+	<ul id="{$time}_list" class="sellect_goods_list"></ul>
+
+	<div class="layui-form-mid">
+		<table id="select-goods-table" lay-filter="select-goods-table"></table>
+	</div>
+</div>
+
+<!-- 工具栏 -->
+<script type="text/html" id="goods-table-tool-bar">
+	<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del"><i class="layui-icon layui-icon-delete"></i>删除</a>
+</script>
+
+<script>
+	var time = "{$time}";
+	var maxNum = "{$maxNum}";
+	var ids = {};
+	var goodsData =  '{$goods}' != "" ?  JSON.parse('{$goods}') : [];
+
+	layui.use(['table'],function(){
+		var layer = layui.layer,table = layui.table,$ = layui.$;
+
+		// 选择商品
+		var Goods = function () {
+			return {
+				init : function (goodsData) {
+					this.render(goodsData);
+
+					table.on('tool(select-goods-table)', function(obj) {
+						switch(obj.event)
+						{
+							case 'del':
+								var ids_array = $("#" + time).val().split(",");
+								for (var i=0;i<ids_array.length ;i++ ) {
+									if(ids_array[i] == obj.data.id) ids_array.splice(i,1);
+								}
+								$("#" + time).val(ids_array.join(","));
+								obj.del();
+								break;
+						}
+					});
+				},
+				render : function (goodsData) {
+					layui.table.render({
+						elem: '#select-goods-table'
+						,size: 'sm'
+						,cols: [[
+							{field: 'goods_sn', title: '商品编号', width: 200}
+							,{field: 'goods_name', title: '商品名', minWidth: 300}
+							,{field: 'shop_price', title: '价格', minWidth: 150}
+							,{title:'操作', toolbar: '#goods-table-tool-bar', width:220, unresize:true}
+						]]
+						,data: goodsData
+					});
+				}
+			};
+		}();
+		Goods.init(goodsData);
+
+		$(".goods-add").on('click', function () {
+			layer.open({
+				type: 2,
+				title: '添加商品',
+				content: "{:url('tag_tools/selectGoods', ['goods_max' => $maxNum,'no_ids'=>$no_goods_ids])}",
+				maxmin: true,
+				area: ['85%', '85%'],
+				btn: ['确定', '取消'],
+				yes: function(index, layero) {
+					var iframe = window['layui-layer-iframe' + index];
+					ids = iframe.child();
+					if(Object.getOwnPropertyNames(ids).length > maxNum){
+						layer.msg("最多只能选择" + maxNum + "个商品");
+						return false;
+					}
+
+					var goodsData = [];
+					for(var key in ids) goodsData.push(ids[key]);
+					Goods.render(goodsData)
+
+					$("#" + time +"_list").empty();
+					var the_val = "";
+					for(var key in ids){
+						the_val += "," + key;
+					}
+
+					$("#" + time).val(the_val.slice(1));
+					layer.close(index);
+				}
+			});
+		});
+	});
+
+</script>
+{/block}

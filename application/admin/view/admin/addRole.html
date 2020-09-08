@@ -1,0 +1,114 @@
+{extend name='public/base' /}
+
+{block name="content"}
+<style>
+    .layui-table-tool-temp {
+        padding-right: 0px;
+    }
+</style>
+
+<form class="layui-form" id="create-form" style="padding: 20px 0 0 0;">
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">角色名称</label>
+        <div class="layui-input-inline">
+            <input name="username" type="text" class="layui-input" lay-verify="required" autocomplete="off"  placeholder="角色名称">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">描述</label>
+        <div class="layui-input-inline">
+            <textarea name="desc"  placeholder="请输入内容" class="layui-textarea desc"></textarea>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">状态</label>
+        <div class="layui-input-inline">
+            <input type="radio" name="status" value="1" data-val="1" title="显示" class="layui-input" checked lay-filter="isshow">
+            <input type="radio" name="status" value="0" data-val="0" title="隐藏" class="layui-input" lay-filter="isshow">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">权限</label>
+        <div class="layui-input-inline">
+            <div id="test12" class="demo-tree-more"></div>
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-hide">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn layui-btn-normal" lay-submit lay-filter="create-submit" id="create-submit">确定</button>
+        </div>
+    </div>
+
+</form>
+{/block}
+{block name="javascript"}<!--自定义脚本-->
+<script>
+    var role_add_url = "{:url('admin/addRole')}";
+</script>
+<script>
+    var priv= {$priv};
+    layui.use(['layer', 'form','tree'], function(){
+        var  layer = layui.layer //弹层
+            ,form = layui.form //表单
+            , tree = layui.tree
+
+            ,data = priv;
+        //基本演示
+        tree.render({
+            elem: '#test12'
+            ,data: data
+            ,id: 'demoId' //定义索引
+            ,showCheckbox: true  //是否显示复选框
+            ,oncheck: function(obj){
+
+            }
+        });
+
+        // 创建菜单
+        form.on('submit(create-submit)', function(data) {
+            var ids=[];
+            var checkData = tree.getChecked('demoId');
+            for (var i = 0; i < checkData.length; i++) {
+                ids.push(checkData[i]['id']);
+                if(checkData[i]['children'].length>0){
+                    for (var j=0;j<checkData[i]['children'].length; j++){
+                        ids.push(checkData[i]['children'][j]['id']);
+                    }
+                }
+
+            }
+            var rule = ids;
+            $.unique(rule);//去重
+            $.ajax({
+                url: role_add_url,
+                type: 'post',
+                data: {
+                    "name": $("input[name=username]").val(),
+                    "desc": $(".desc").val(),
+                    "status": $("input[name=status]:checked").attr("data-val"),
+                    "rule": rule,
+                },
+                async: false,
+                dataType: 'json',
+                error: function(XMLHttpRequest, textStatus, errorThrown) {
+                    showErrorMsg('网络繁忙');
+                },
+                success: function(data) {
+                    if ( data.code === 0 ) {
+                        showErrorMsg(data.msg);
+                    } else {
+                        showSuccessMsg(data.msg, function() {
+							parent.location.reload();
+						});
+                    }
+                }
+            });
+        });
+    });
+</script>
+{/block}

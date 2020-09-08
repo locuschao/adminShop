@@ -1,0 +1,60 @@
+<!-- 头部开始  -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>{:config('adminSystem.site_name')} - 后台管理中心</title>
+    <link rel="stylesheet" href="/static/layui/css/layui.css"/>
+    <link rel="stylesheet" href="/static/css/admin.css" media="all">
+    <link rel="stylesheet" href="/static/css/style.css" media="all">
+    <script type="text/javascript" src="/static/layui/layui.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/js/main.js"></script>
+    <script src="/static/js/common.js"></script>
+    <script src="/static/util/clipboard/clipboard.min.js"></script>
+    <script>
+        $(function() {
+            layui.define(['layer', 'code', 'form', 'element', 'util'], function(exports){
+                var $ = layui.jquery;
+                var layer = layui.layer;
+                var form = layui.form;
+                var element = layui.element; //导航的hover效果、二级菜单等功能，需要依赖element模块
+                //var util = layui.util;
+                var device = layui.device();
+                //阻止IE7以下访问
+                if(device.ie && device.ie < 8){
+                    layer.alert('Layui最低支持ie8，您当前使用的是古老的 IE'+ device.ie + '，你丫的肯定不是程序猿！');
+                }
+                //手机设备的简单适配
+                var treeMobile = $('.site-tree-mobile');
+                var shadeMobile = $('.site-mobile-shade');
+
+                treeMobile.on('click', function(){
+                    $('body').addClass('site-mobile');
+                });
+
+                shadeMobile.on('click', function(){
+                    $('body').removeClass('site-mobile');
+                });
+                exports('global', {});
+
+                //菜单借点 图标
+                window.global = {
+                    preview: function(){
+                        var preview = document.getElementById('LAY_preview');
+                        return preview ? preview.innerHTML : '';
+                    }()
+                };
+            });
+        });
+
+        $.getUrlParam = function (name) {
+            var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+            var r = window.location.search.substr(1).match(reg);
+            if (r != null) return unescape(r[2]); return null;
+        };
+    </script>
+</head>
+<body>
